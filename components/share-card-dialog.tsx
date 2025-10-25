@@ -1,11 +1,12 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Share2, Download, Check } from "lucide-react"
 import html2canvas from "html2canvas"
-import { getUserStats } from "@/lib/checkin-data"
+import { useAuth } from "@/contexts/AuthContext"
+import { getUserStatistics } from "@/lib/supabase-checkin"
 
 interface ShareCardDialogProps {
   date: string
@@ -18,11 +19,24 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
   const cardRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isDownloaded, setIsDownloaded] = useState(false)
+  const [currentStreak, setCurrentStreak] = useState(0)
+  const { user } = useAuth()
 
-  const stats = getUserStats()
   const dateObj = new Date(date)
   const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`
   const dayOfWeek = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][dateObj.getDay()]
+
+  useEffect(() => {
+    const loadStats = async () => {
+      if (user) {
+        const stats = await getUserStatistics(user.id)
+        if (stats) {
+          setCurrentStreak(stats.currentStreak)
+        }
+      }
+    }
+    loadStats()
+  }, [user])
 
   const handleDownload = async () => {
     if (!cardRef.current) return
@@ -89,9 +103,9 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
             {/* Footer */}
             <div className="space-y-3">
               {/* Stats Badge */}
-              {stats.currentStreak > 0 && (
+              {currentStreak > 0 && (
                 <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-full text-sm font-bold">
-                  <span>已打卡第 {stats.currentStreak} 天</span>
+                  <span>已打卡第 {currentStreak} 天</span>
                   <span>🔥</span>
                 </div>
               )}
