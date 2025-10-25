@@ -23,22 +23,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const supabase = createClient()
 
   useEffect(() => {
-    // 获取当前登录用户
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user)
-      if (user) {
-        loadProfile(user.id)
-      } else {
-        // 未登录时，尝试从 localStorage 加载（向后兼容）
-        loadLocalProfile()
+    let mounted = true
+
+    // 设置超时保护（10秒后强制结束加载状态）
+    const loadingTimeout = setTimeout(() => {
+      if (mounted) {
+        console.error("[AuthContext] 加载超时，强制结束加载状态")
         setLoading(false)
       }
-    })
+    }, 10000)
+
+    // 获取当前登录用户
+    const initAuth = async () => {
+      try {
+        console.log("[AuthContext] 开始初始化认证...")
+        const { data: { user }, error } = await supabase.auth.getUser()
+
+        if (error) {
+          console.error("[AuthContext] 获取用户失败:", error)
+          setUser(null)
+          setProfile(null)
+          loadLocalProfile()
+          setLoading(false)
+          clearTimeout(loadingTimeout)
+          return
+        }
+
+        console.log("[AuthContext] 获取到用户:", user?.id)
+        setUser(user)
+
+        if (user) {
+          await loadProfile(user.id)
+        } else {
+          // 未登录时，尝试从 localStorage 加载（向后兼容）
+          loadLocalProfile()
+          setLoading(false)
+        }
+        clearTimeout(loadingTimeout)
+      } catch (error) {
+        console.error("[AuthContext] 初始化认证失败:", error)
+        setUser(null)
+        setProfile(null)
+        setLoading(false)
+        clearTimeout(loadingTimeout)
+      }
+    }
+
+    initAuth()
 
     // 监听认证状态变化
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("[AuthContext] 认证状态变化:", event, "user:", session?.user?.id)
       setUser(session?.user ?? null)
       if (session?.user) {
         await loadProfile(session.user.id)
@@ -49,7 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      mounted = false
+      clearTimeout(loadingTimeout)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const loadProfile = async (userId: string) => {
@@ -61,15 +102,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error.code === "PGRST116") {
           // 用户没有 profile，可能刚注册
           console.log("[AuthContext] 未找到 profile，用户需要完成 onboarding")
+          setProfile(null)
+          return
         } else {
           console.error("[AuthContext] 加载 profile 出错:", error)
-          throw error
+          setProfile(null)
+          return
         }
       }
 
       console.log("[AuthContext] Profile 数据:", data)
 
-      if (data && data.mbti && data.role) {
+      if (!data) {
+        console.log("[AuthContext] 没有 profile 数据")
+        setProfile(null)
+        return
+      }
+
+      if (data.mbti && data.role) {
         // 确保必需字段存在
         const userProfile: UserProfile = {
           mbti: data.mbti,
@@ -83,22 +133,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // 同步到 localStorage
         localStorage.setItem("userProfile", JSON.stringify(userProfile))
-      } else if (data) {
+      } else {
         // 数据不完整，需要重新完成 onboarding
         console.log("[AuthContext] Profile 数据不完整，缺少必需字段:", {
           mbti: data.mbti,
           role: data.role,
         })
         setProfile(null)
-      } else {
-        console.log("[AuthContext] 没有 profile 数据")
-        setProfile(null)
       }
     } catch (error) {
       console.error("[AuthContext] 加载 profile 失败:", error)
       setProfile(null)
     } finally {
-      console.log("[AuthContext] 加载完成，设置 loading = false")
+      console.log("[AuthContext] loadProfile 完成，设置 loading = false")
       setLoading(false)
     }
   }
