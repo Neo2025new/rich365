@@ -49,7 +49,7 @@ export async function generateFullYearCalendar(
 
     // 4. 调用 Gemini AI 生成
     console.log(`[AI Calendar] 调用 Gemini AI...`)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
 
     let result
     try {

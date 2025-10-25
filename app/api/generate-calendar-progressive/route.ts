@@ -20,11 +20,23 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Phase 1: 生成年度规划 + 第一个月 (快速)
+    // Phase 1: 生成从今天开始的 30 天 (快速)
     if (phase === "initial" || !phase) {
-      const year = new Date().getFullYear()
+      const today = new Date()
       const mbtiInfo = mbtiData[profile.mbti]
       const roleInfo = roleData[profile.role]
+
+      // 生成30天的日期列表
+      const dates: string[] = []
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(today)
+        date.setDate(today.getDate() + i)
+        const dateStr = date.toISOString().split('T')[0]  // YYYY-MM-DD
+        dates.push(dateStr)
+      }
+
+      const startDate = dates[0]
+      const endDate = dates[dates.length - 1]
 
       const prompt = `你是一个专业的财富增长顾问和行动规划师。
 
@@ -34,10 +46,11 @@ export async function POST(request: Request) {
 - 职业身份：${profile.role}
 - 职业描述：${roleInfo.description}
 ${profile.goal ? `- 个人目标：${profile.goal}` : ""}
+- 开始日期：${startDate}（今天）
 
-任务：为用户生成 ${year} 年 1月份（31天）的每日"搞钱微行动"。
+任务：为用户生成从今天（${startDate}）开始的 30 天每日"搞钱微行动"。
 
-主题：搞钱觉醒月 - 唤醒财富意识，建立基础认知
+主题：搞钱觉醒月 - 唤醒财富意识，建立基础认知，培养每日行动习惯
 
 要求：
 1. 每个行动必须具体、可执行（30分钟内可完成）
@@ -51,23 +64,24 @@ ${profile.goal ? `- 个人目标：${profile.goal}` : ""}
 输出格式（纯 JSON 数组，不要任何其他文字）：
 [
   {
-    "date": "${year}-01-01",
-    "title": "阅读一本理财书籍",
-    "description": "从经典理财书籍开始，建立基础的财富认知，了解复利的力量。",
-    "emoji": "📚",
+    "date": "${dates[0]}",
+    "title": "写下今天的财富目标",
+    "description": "明确的目标是行动的起点，写下你今天想实现的一个小目标。",
+    "emoji": "🎯",
     "theme": "搞钱觉醒月",
-    "category": "learning"
+    "category": "mindset"
   },
-  ...共 31 个（1月1日到1月31日）
+  ...共 30 个（${startDate} 到 ${endDate}）
 ]
 
 重要：
-- 必须生成完整的 31 个行动（${year}-01-01 到 ${year}-01-31）
+- 必须生成完整的 30 个行动
+- 日期必须严格按照以下顺序：${dates.join(', ')}
 - 只返回 JSON 数组，不要任何解释、注释或代码块标记
 - 确保 JSON 格式正确，可以直接解析`
 
       console.log("[Progressive Calendar] 调用 Gemini AI 生成第一个月...")
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+      const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
       const result = await model.generateContent(prompt)
       const text = result.response.text()
 

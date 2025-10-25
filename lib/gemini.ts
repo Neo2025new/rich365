@@ -12,7 +12,7 @@ export const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
  */
 export async function generateGoalBasedActions(goal: string, mbti: string, role: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
 
     const prompt = `你是一个专业的财富增长顾问，擅长制定可执行的微行动计划。
 
@@ -55,7 +55,7 @@ export async function generateGoalBasedActions(goal: string, mbti: string, role:
  */
 export async function validateGoal(goal: string): Promise<{ valid: boolean; suggestion?: string }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
 
     const prompt = `判断以下目标是否是一个合理的、与财富增长相关的目标：
 

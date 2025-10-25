@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { mbtiData, roleData } from "@/lib/calendar-data"
 import { getMonthTheme } from "@/lib/calendar-hybrid"
-import { ArrowRight, User, Trophy, Sparkles } from "lucide-react"
+import { ArrowRight, User, Trophy, Sparkles, Printer } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function CalendarPage() {
@@ -223,7 +223,7 @@ export default function CalendarPage() {
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">你的专属搞钱日历</h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-2">每天行动一小步，财富增长一大步</p>
-            <div className="flex gap-3 mt-4">
+            <div className="flex flex-wrap gap-3 mt-4">
               <Button variant="outline" size="sm" onClick={() => router.push("/")}>
                 重新选择人格
               </Button>
@@ -231,6 +231,12 @@ export default function CalendarPage() {
                 <Button variant="outline" size="sm">
                   <Trophy className="mr-2 h-4 w-4" />
                   查看排行榜
+                </Button>
+              </Link>
+              <Link href="/print">
+                <Button variant="outline" size="sm">
+                  <Printer className="mr-2 h-4 w-4" />
+                  打印30天行动
                 </Button>
               </Link>
             </div>
