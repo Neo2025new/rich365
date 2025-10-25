@@ -27,8 +27,11 @@ export default function CalendarPage() {
     // 加载所有月份的主题
     if (profile) {
       loadMonthThemes()
+    } else if (!loading) {
+      // 如果没有 profile 且不在加载中，停止主题加载状态
+      setIsLoadingThemes(false)
     }
-  }, [profile, user])
+  }, [profile, user, loading])
 
   const loadMonthThemes = async () => {
     if (!profile) return

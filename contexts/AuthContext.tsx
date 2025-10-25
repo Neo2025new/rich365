@@ -65,7 +65,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      if (data) {
+      if (data && data.mbti && data.role) {
+        // 确保必需字段存在
         const userProfile: UserProfile = {
           mbti: data.mbti,
           role: data.role,
@@ -77,6 +78,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // 同步到 localStorage
         localStorage.setItem("userProfile", JSON.stringify(userProfile))
+      } else if (data) {
+        // 数据不完整，需要重新完成 onboarding
+        console.log("Profile data incomplete, user needs to complete onboarding")
+        setProfile(null)
       }
     } catch (error) {
       console.error("Error loading profile:", error)
