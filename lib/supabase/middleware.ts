@@ -31,8 +31,9 @@ export async function updateSession(request: NextRequest) {
 
   // 刷新会话
   const {
-    data: { user },
-  } = await supabase.auth.getUser()
+    data: { session },
+  } = await supabase.auth.getSession()
+  const user = session?.user ?? null
 
   // 保护需要认证的路由
   if (
