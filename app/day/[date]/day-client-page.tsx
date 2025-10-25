@@ -18,10 +18,15 @@ export default function DayClientPage({ date }: { date: string }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
 
   useEffect(() => {
-    const stored = localStorage.getItem("userProfile")
-    if (stored) {
-      setProfile(JSON.parse(stored))
-    } else {
+    try {
+      const stored = localStorage.getItem("userProfile")
+      if (stored) {
+        setProfile(JSON.parse(stored))
+      } else {
+        router.push("/")
+      }
+    } catch (error) {
+      console.error("Failed to load user profile:", error)
       router.push("/")
     }
   }, [router])

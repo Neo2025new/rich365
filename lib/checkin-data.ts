@@ -70,17 +70,26 @@ export function getUserStats(): UserStats {
     return getDefaultStats()
   }
 
-  const stored = localStorage.getItem("userStats")
-  if (!stored) {
+  try {
+    const stored = localStorage.getItem("userStats")
+    if (!stored) {
+      return getDefaultStats()
+    }
+
+    return JSON.parse(stored)
+  } catch (error) {
+    console.error("Failed to load user stats from localStorage:", error)
     return getDefaultStats()
   }
-
-  return JSON.parse(stored)
 }
 
 export function saveUserStats(stats: UserStats): void {
   if (typeof window === "undefined") return
-  localStorage.setItem("userStats", JSON.stringify(stats))
+  try {
+    localStorage.setItem("userStats", JSON.stringify(stats))
+  } catch (error) {
+    console.error("Failed to save user stats to localStorage:", error)
+  }
 }
 
 function getDefaultStats(): UserStats {
@@ -101,6 +110,17 @@ export function hasCheckedInToday(date: string): boolean {
 
 export function checkIn(date: string): { stats: UserStats; newBadges: Badge[] } {
   const stats = getUserStats()
+
+  // Validate date: only allow check-in for today or past dates, not future dates
+  const checkInDate = new Date(date)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  checkInDate.setHours(0, 0, 0, 0)
+
+  if (checkInDate > today) {
+    console.warn("Cannot check in for future dates")
+    return { stats, newBadges: [] }
+  }
 
   // Prevent duplicate check-ins
   if (hasCheckedInToday(date)) {
@@ -173,14 +193,35 @@ export function getNextBadge(): Badge | null {
 
   if (unearned.length === 0) return null
 
-  // Return the next achievable badge
-  return unearned.reduce((closest, badge) => {
-    const currentValue = badge.type === "streak" ? stats.currentStreak : stats.totalCheckIns
-    const closestValue = closest.type === "streak" ? stats.currentStreak : stats.totalCheckIns
+  // Separate badges by type and find the closest one for each
+  const streakBadges = unearned.filter((b) => b.type === "streak")
+  const totalBadges = unearned.filter((b) => b.type === "total")
 
-    const badgeDiff = badge.requirement - currentValue
-    const closestDiff = closest.requirement - closestValue
+  let nextStreakBadge: Badge | null = null
+  let nextTotalBadge: Badge | null = null
 
-    return badgeDiff < closestDiff ? badge : closest
-  })
+  if (streakBadges.length > 0) {
+    nextStreakBadge = streakBadges.reduce((closest, badge) => {
+      const badgeDiff = badge.requirement - stats.currentStreak
+      const closestDiff = closest.requirement - stats.currentStreak
+      return badgeDiff >= 0 && badgeDiff < closestDiff ? badge : closest
+    })
+  }
+
+  if (totalBadges.length > 0) {
+    nextTotalBadge = totalBadges.reduce((closest, badge) => {
+      const badgeDiff = badge.requirement - stats.totalCheckIns
+      const closestDiff = closest.requirement - stats.totalCheckIns
+      return badgeDiff >= 0 && badgeDiff < closestDiff ? badge : closest
+    })
+  }
+
+  // Return whichever is closer to being achieved
+  if (!nextStreakBadge) return nextTotalBadge
+  if (!nextTotalBadge) return nextStreakBadge
+
+  const streakProgress = stats.currentStreak / nextStreakBadge.requirement
+  const totalProgress = stats.totalCheckIns / nextTotalBadge.requirement
+
+  return streakProgress > totalProgress ? nextStreakBadge : nextTotalBadge
 }

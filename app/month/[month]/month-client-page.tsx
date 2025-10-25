@@ -29,10 +29,15 @@ export default function MonthClientPage({
   const month = Number.parseInt(params.month)
 
   useEffect(() => {
-    const stored = localStorage.getItem("userProfile")
-    if (stored) {
-      setProfile(JSON.parse(stored))
-    } else {
+    try {
+      const stored = localStorage.getItem("userProfile")
+      if (stored) {
+        setProfile(JSON.parse(stored))
+      } else {
+        router.push("/")
+      }
+    } catch (error) {
+      console.error("Failed to load user profile:", error)
       router.push("/")
     }
   }, [router])
@@ -52,12 +57,15 @@ export default function MonthClientPage({
     )
   }
 
+  // Use current year dynamically
+  const currentYear = new Date().getFullYear()
+
   const theme = getPersonalizedMonthTheme(month, profile)
-  const actions = getPersonalizedDailyActions(2025, month, profile)
+  const actions = getPersonalizedDailyActions(currentYear, month, profile)
 
   // Generate calendar grid
-  const daysInMonth = new Date(2025, month, 0).getDate()
-  const firstDayOfMonth = new Date(2025, month - 1, 1).getDay()
+  const daysInMonth = new Date(currentYear, month, 0).getDate()
+  const firstDayOfMonth = new Date(currentYear, month - 1, 1).getDay()
 
   const calendarDays: (number | null)[] = []
 
@@ -83,7 +91,7 @@ export default function MonthClientPage({
           <div className="flex items-start gap-4">
             <div className="text-5xl">{theme.emoji}</div>
             <div>
-              <div className="text-sm text-muted-foreground mb-1">{theme.name} · 2025</div>
+              <div className="text-sm text-muted-foreground mb-1">{theme.name} · {currentYear}</div>
               <h1 className="text-3xl md:text-4xl font-bold mb-2">{theme.theme}</h1>
               <p className="text-muted-foreground">{theme.description}</p>
             </div>
@@ -109,7 +117,7 @@ export default function MonthClientPage({
               return <div key={`empty-${index}`} className="aspect-square" />
             }
 
-            const dateStr = `2025-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`
+            const dateStr = `${currentYear}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`
             const action = actions.find((a) => a.date === dateStr)
             const colorClass = action ? cardColors[day % cardColors.length] : ""
 

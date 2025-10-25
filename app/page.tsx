@@ -14,8 +14,13 @@ export default function HomePage() {
 
   const handleGenerate = () => {
     if (selectedMBTI && selectedRole) {
-      localStorage.setItem("userProfile", JSON.stringify({ mbti: selectedMBTI, role: selectedRole }))
-      router.push("/calendar")
+      try {
+        localStorage.setItem("userProfile", JSON.stringify({ mbti: selectedMBTI, role: selectedRole }))
+        router.push("/calendar")
+      } catch (error) {
+        console.error("Failed to save user profile:", error)
+        alert("保存失败，请检查浏览器设置是否允许存储数据")
+      }
     }
   }
 
