@@ -84,7 +84,13 @@ export function AppHeader() {
                     <div>
                       <p className="text-sm font-medium leading-none">{profile.username || "未命名用户"}</p>
                       <p className="text-xs leading-none text-muted-foreground mt-1">
-                        {mbtiData[profile.mbti].emoji} {profile.mbti} · {profile.role}
+                        {profile.mbti && profile.role ? (
+                          <>
+                            {mbtiData[profile.mbti].emoji} {profile.mbti} · {profile.role}
+                          </>
+                        ) : (
+                          "请完成设置"
+                        )}
                       </p>
                     </div>
                   </div>

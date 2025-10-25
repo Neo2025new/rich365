@@ -40,8 +40,8 @@ export type MonthTheme = {
 }
 
 export type UserProfile = {
-  mbti: MBTIType
-  role: ProfessionalRole
+  mbti?: MBTIType // 可选，在 onboarding 中填写
+  role?: ProfessionalRole // 可选，在 onboarding 中填写
   goal?: string // 用户的搞钱目标（选填）
   username?: string // 用户名
   avatar?: string // 头像 emoji
@@ -1148,6 +1148,10 @@ function saveUsedActionsForYear(year: number, profile: UserProfile, usedActions:
 }
 
 export function getPersonalizedDailyActions(year: number, month: number, profile: UserProfile): DailyAction[] {
+  if (!profile.mbti || !profile.role) {
+    throw new Error("Profile mbti and role are required")
+  }
+
   const actions: DailyAction[] = []
   const daysInMonth = new Date(year, month, 0).getDate()
   const traits = getMBTITraits(profile.mbti)
@@ -1326,6 +1330,11 @@ export function getPersonalizedMonthTheme(month: number, profile: UserProfile): 
   }
 
   const theme = baseThemes[month]
+
+  // 如果缺少 mbti 或 role，直接返回基础主题
+  if (!profile.mbti || !profile.role) {
+    return theme
+  }
 
   // Personalize based on MBTI
   if (["INTJ", "INTP", "ENTJ", "ENTP"].includes(profile.mbti)) {

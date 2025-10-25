@@ -118,6 +118,10 @@ export async function generateFullYearCalendar(
  * 构建 AI prompt
  */
 function buildPrompt(year: number, profile: UserProfile): string {
+  if (!profile.mbti || !profile.role) {
+    throw new Error("Profile mbti and role are required to build prompt")
+  }
+
   const mbtiInfo = mbtiData[profile.mbti]
   const roleInfo = roleData[profile.role]
 

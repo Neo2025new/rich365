@@ -75,9 +75,14 @@ export default function CalendarPage() {
       return
     }
 
-    // 如果加载完成且没有 profile，跳转到 onboarding
-    if (!loading && !profile && !redirectAttempted.current) {
-      console.log("[Calendar Page] ⚠️ 没有 profile，准备重定向到 onboarding")
+    // 如果加载完成且没有 profile，或者 profile 缺少 mbti/role，跳转到 onboarding
+    const needsOnboarding = !profile || !profile.mbti || !profile.role
+    if (!loading && needsOnboarding && !redirectAttempted.current) {
+      if (!profile) {
+        console.log("[Calendar Page] ⚠️ 没有 profile，准备重定向到 onboarding")
+      } else if (!profile.mbti || !profile.role) {
+        console.log("[Calendar Page] ⚠️ Profile 缺少 mbti 或 role，准备重定向到 onboarding")
+      }
       console.log("[Calendar Page] 检查 sessionStorage 备份...")
 
       // 最后尝试从 sessionStorage 获取备份
@@ -88,8 +93,9 @@ export default function CalendarPage() {
 
         // 再给一次机会
         setTimeout(() => {
-          if (!profile && !redirectAttempted.current) {
-            console.log("[Calendar Page] ❌ 最终确认没有 profile，重定向到 onboarding")
+          const stillNeedsOnboarding = !profile || !profile.mbti || !profile.role
+          if (stillNeedsOnboarding && !redirectAttempted.current) {
+            console.log("[Calendar Page] ❌ 最终确认需要 onboarding，重定向")
             redirectAttempted.current = true
             router.push("/onboarding")
           }
@@ -195,7 +201,8 @@ export default function CalendarPage() {
     )
   }
 
-  if (!profile) {
+  // 如果没有 profile 或缺少必要字段，不显示任何内容（会被重定向）
+  if (!profile || !profile.mbti || !profile.role) {
     return null
   }
 
