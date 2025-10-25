@@ -70,6 +70,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           mbti: data.mbti,
           role: data.role,
           goal: data.goal || undefined,
+          username: data.username || undefined,
+          avatar: data.avatar || undefined,
         }
         setProfile(userProfile)
 
@@ -113,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             mbti: newProfile.mbti,
             role: newProfile.role,
             goal: newProfile.goal || null,
+            username: newProfile.username || null,
+            avatar: newProfile.avatar || null,
           })
           .eq("id", user.id)
 
