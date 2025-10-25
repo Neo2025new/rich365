@@ -190,14 +190,40 @@ function parseAIResponse(text: string): Array<{
   category: string
 }> {
   try {
+    console.log("[AI Calendar] 开始解析 AI 响应，原始长度:", text.length)
+
     // 移除可能的 markdown 代码块标记
     let cleanedText = text.trim()
-    cleanedText = cleanedText.replace(/```json\n?/g, "")
+
+    // 移除各种 markdown 代码块标记
+    cleanedText = cleanedText.replace(/```json\n?/gi, "")
+    cleanedText = cleanedText.replace(/```javascript\n?/gi, "")
     cleanedText = cleanedText.replace(/```\n?/g, "")
-    cleanedText = cleanedText.trim()
+
+    // 移除可能的注释（// 和 /* */)
+    cleanedText = cleanedText.replace(/\/\*[\s\S]*?\*\//g, "") // 移除 /* */ 注释
+    cleanedText = cleanedText.replace(/\/\/.*/g, "") // 移除 // 注释
+
+    // 查找 JSON 数组的开始和结束
+    const startIndex = cleanedText.indexOf("[")
+    const endIndex = cleanedText.lastIndexOf("]")
+
+    if (startIndex === -1 || endIndex === -1) {
+      console.error("[AI Calendar] 无法找到 JSON 数组")
+      console.error("[AI Calendar] 清理后的文本前500字符:", cleanedText.substring(0, 500))
+      throw new Error("响应中未找到 JSON 数组")
+    }
+
+    // 提取纯 JSON 部分
+    cleanedText = cleanedText.substring(startIndex, endIndex + 1).trim()
+
+    console.log("[AI Calendar] 清理后的 JSON 长度:", cleanedText.length)
+    console.log("[AI Calendar] JSON 前100字符:", cleanedText.substring(0, 100))
 
     // 解析 JSON
     const actions = JSON.parse(cleanedText)
+
+    console.log("[AI Calendar] JSON 解析成功，数组长度:", actions.length)
 
     // 验证格式
     if (!Array.isArray(actions)) {
@@ -205,16 +231,26 @@ function parseAIResponse(text: string): Array<{
     }
 
     // 验证每个行动的必需字段
-    const validActions = actions.filter((action) => {
-      return (
+    const validActions = actions.filter((action, index) => {
+      const isValid =
         action.date &&
         action.title &&
         action.description &&
         action.emoji &&
         action.theme &&
         action.category
-      )
+
+      if (!isValid && index < 5) {
+        // 只记录前5个无效行动
+        console.warn(`[AI Calendar] 第 ${index + 1} 个行动无效:`, action)
+      }
+
+      return isValid
     })
+
+    console.log(
+      `[AI Calendar] 有效行动: ${validActions.length}/${actions.length}`
+    )
 
     if (validActions.length === 0) {
       throw new Error("没有有效的行动")
@@ -222,9 +258,13 @@ function parseAIResponse(text: string): Array<{
 
     return validActions
   } catch (error) {
-    console.error("[AI Calendar] JSON 解析错误:", error)
-    console.error("[AI Calendar] 原始响应:", text.substring(0, 500))
-    throw new Error(`JSON 解析失败: ${error instanceof Error ? error.message : "未知错误"}`)
+    console.error("[AI Calendar] ❌ JSON 解析错误:", error)
+    console.error("[AI Calendar] 原始响应前1000字符:", text.substring(0, 1000))
+    console.error("[AI Calendar] 原始响应后200字符:", text.substring(text.length - 200))
+
+    throw new Error(
+      `JSON 解析失败: ${error instanceof Error ? error.message : "未知错误"}`
+    )
   }
 }
 
