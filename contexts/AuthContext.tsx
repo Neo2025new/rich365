@@ -89,22 +89,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       setLoadingState("loading")
-      console.log("[AuthContext] [步骤 1/3] 获取当前登录用户...")
+      console.log("[AuthContext] [步骤 1/3] 获取当前会话...")
 
       // 设置整体超时保护
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("认证初始化超时")), CONFIG.AUTH_INIT_TIMEOUT)
       })
 
-      const authPromise = supabase.auth.getUser()
+      // 先获取会话（不会抛出错误）
+      const sessionPromise = supabase.auth.getSession()
 
-      const { data: { user }, error } = await Promise.race([authPromise, timeoutPromise]) as any
+      const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]) as any
 
       if (!mountedRef.current) return
 
       if (error) {
         throw error
       }
+
+      const user = session?.user ?? null
 
       console.log("[AuthContext] [步骤 2/3] ✅ 用户状态:", user ? `已登录 (${user.id})` : "未登录")
       setUser(user)
