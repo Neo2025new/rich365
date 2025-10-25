@@ -145,7 +145,7 @@ export function checkIn(date: string): { stats: UserStats; newBadges: Badge[] } 
   )
 
   let currentStreak = 1
-  const today = new Date(date)
+  const streakDate = new Date(date)
 
   for (let i = 1; i < sortedRecords.length; i++) {
     const currentDate = new Date(sortedRecords[i - 1].date)
