@@ -15,6 +15,7 @@ export default function CalendarPage() {
   const { user, profile, loading } = useAuth()
   const [monthThemes, setMonthThemes] = useState<Record<number, any>>({})
   const [isLoadingThemes, setIsLoadingThemes] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
     // 如果加载完成且没有 profile，跳转到 onboarding
@@ -26,35 +27,70 @@ export default function CalendarPage() {
   useEffect(() => {
     // 加载所有月份的主题
     if (profile) {
+      console.log("[Calendar Page] 开始加载月度主题, user:", user?.id, "profile:", profile)
       loadMonthThemes()
     } else if (!loading) {
       // 如果没有 profile 且不在加载中，停止主题加载状态
+      console.log("[Calendar Page] 没有 profile，停止加载")
       setIsLoadingThemes(false)
     }
-  }, [profile, user, loading])
+  }, [profile, loading]) // 移除 user 依赖，避免重复触发
 
   const loadMonthThemes = async () => {
     if (!profile) return
 
-    setIsLoadingThemes(true)
-    const themes: Record<number, any> = {}
+    try {
+      console.log("[Calendar Page] loadMonthThemes 开始")
+      setIsLoadingThemes(true)
+      setLoadError(null)
+      const themes: Record<number, any> = {}
 
-    // 加载 12 个月的主题
-    for (let month = 1; month <= 12; month++) {
-      const theme = await getMonthTheme(user?.id || null, month, profile)
-      themes[month] = theme
+      // 设置超时（30秒）
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("加载超时，请刷新页面重试")), 30000)
+      })
+
+      // 加载 12 个月的主题
+      const loadPromise = (async () => {
+        for (let month = 1; month <= 12; month++) {
+          console.log(`[Calendar Page] 加载第 ${month} 月主题...`)
+          const theme = await getMonthTheme(user?.id || null, month, profile)
+          themes[month] = theme
+          console.log(`[Calendar Page] 第 ${month} 月主题加载完成:`, theme.theme)
+        }
+        return themes
+      })()
+
+      // 使用 Promise.race 来实现超时
+      const loadedThemes = await Promise.race([loadPromise, timeoutPromise]) as Record<number, any>
+
+      console.log("[Calendar Page] 所有月度主题加载完成")
+      setMonthThemes(loadedThemes)
+      setIsLoadingThemes(false)
+    } catch (error) {
+      console.error("[Calendar Page] 加载月度主题失败:", error)
+      setLoadError(error instanceof Error ? error.message : "加载失败")
+      setIsLoadingThemes(false)
     }
-
-    setMonthThemes(themes)
-    setIsLoadingThemes(false)
   }
 
   if (loading || isLoadingThemes) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md px-4">
           <div className="text-4xl mb-4">⏳</div>
-          <p className="text-muted-foreground">加载中...</p>
+          <p className="text-muted-foreground mb-4">
+            {loading ? "正在加载用户信息..." : "正在加载日历主题..."}
+          </p>
+          {loadError && (
+            <div className="mt-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-destructive font-medium mb-2">加载失败</p>
+              <p className="text-sm text-muted-foreground mb-3">{loadError}</p>
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                刷新页面
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     )

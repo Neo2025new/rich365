@@ -54,16 +54,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
+      console.log("[AuthContext] 开始加载 profile, userId:", userId)
       const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
 
       if (error) {
         if (error.code === "PGRST116") {
           // 用户没有 profile，可能刚注册
-          console.log("No profile found for user, user needs to complete onboarding")
+          console.log("[AuthContext] 未找到 profile，用户需要完成 onboarding")
         } else {
+          console.error("[AuthContext] 加载 profile 出错:", error)
           throw error
         }
       }
+
+      console.log("[AuthContext] Profile 数据:", data)
 
       if (data && data.mbti && data.role) {
         // 确保必需字段存在
@@ -74,18 +78,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           username: data.username || undefined,
           avatar: data.avatar || undefined,
         }
+        console.log("[AuthContext] Profile 验证通过，设置 profile:", userProfile)
         setProfile(userProfile)
 
         // 同步到 localStorage
         localStorage.setItem("userProfile", JSON.stringify(userProfile))
       } else if (data) {
         // 数据不完整，需要重新完成 onboarding
-        console.log("Profile data incomplete, user needs to complete onboarding")
+        console.log("[AuthContext] Profile 数据不完整，缺少必需字段:", {
+          mbti: data.mbti,
+          role: data.role,
+        })
+        setProfile(null)
+      } else {
+        console.log("[AuthContext] 没有 profile 数据")
         setProfile(null)
       }
     } catch (error) {
-      console.error("Error loading profile:", error)
+      console.error("[AuthContext] 加载 profile 失败:", error)
+      setProfile(null)
     } finally {
+      console.log("[AuthContext] 加载完成，设置 loading = false")
       setLoading(false)
     }
   }
