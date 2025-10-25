@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 
 // 初始化 Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
+export const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
 
 /**
  * 生成基于用户目标的个性化搞钱行动建议
