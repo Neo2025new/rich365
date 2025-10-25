@@ -14,7 +14,7 @@ import { AVATAR_OPTIONS, getRandomAvatar, generateRandomUsername, type AvatarOpt
 import { Check, ArrowLeft, ArrowRight, Sparkles, Loader2, User, Smile } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
-import { generateFullYearCalendar } from "@/lib/gemini-calendar"
+// import { generateFullYearCalendar } from "@/lib/gemini-calendar" // 改用 API 调用
 import { updateUserDisplayInfo } from "@/lib/supabase-leaderboard"
 import { toast } from "sonner"
 
@@ -110,7 +110,19 @@ export default function OnboardingPage() {
         setIsGeneratingCalendar(true)
         toast.info("正在为你生成个性化的 365 天搞钱日历...")
 
-        const result = await generateFullYearCalendar(user.id, profileData)
+        // 调用 API 生成日历
+        const response = await fetch("/api/generate-calendar", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            profile: profileData,
+          }),
+        })
+
+        const result = await response.json()
 
         if (result.success) {
           toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
