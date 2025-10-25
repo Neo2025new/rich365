@@ -30,9 +30,9 @@ export default function HomePage() {
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-12 md:py-16">
           <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">📅 搞钱行动日历 💰</h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">📅 Rich365 💰</h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-2">每天行动一小步，财富增长一大步</p>
-            <p className="text-lg text-muted-foreground">A small action a day, a big step toward wealth.</p>
+            <p className="text-lg text-muted-foreground">365 days, 365 actions toward wealth.</p>
           </div>
         </div>
       </div>

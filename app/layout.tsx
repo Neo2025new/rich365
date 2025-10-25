@@ -11,8 +11,8 @@ const _signikaNegative = V0_Font_Signika_Negative({ subsets: ['latin'], weight: 
 const _geistMono = V0_Font_Geist_Mono({ subsets: ['latin'], weight: ["100","200","300","400","500","600","700","800","900"] })
 
 export const metadata: Metadata = {
-  title: "搞钱行动日历 - Action to Richness",
-  description: "每天行动一小步，财富增长一大步。365个搞钱行动，帮你培养财富思维和行动习惯。",
+  title: "Rich365 - 365天财富行动计划",
+  description: "每天行动一小步，财富增长一大步。365个定制化搞钱行动，帮你培养财富思维和行动习惯。",
   generator: "v0.app",
 }
 
