@@ -5,7 +5,7 @@
 
 import { NextResponse } from "next/server"
 import { genAI } from "@/lib/gemini"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "@/lib/supabase/server"
 import { UserProfile, mbtiData, roleData } from "@/lib/calendar-data"
 
 export async function POST(request: Request) {
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
 
     console.log(`[Progressive Calendar] 开始生成 - Phase: ${phase}, User: ${userId}`)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Phase 1: 生成年度规划 + 第一个月 (快速)
     if (phase === "initial" || !phase) {
