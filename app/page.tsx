@@ -2,10 +2,11 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { mbtiData, roleData, type MBTIType, type ProfessionalRole } from "@/lib/calendar-data"
-import { Check } from "lucide-react"
+import { Check, LogIn } from "lucide-react"
 
 export default function HomePage() {
   const router = useRouter()
@@ -29,6 +30,14 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-12 md:py-16">
+          <div className="flex justify-end mb-4">
+            <Link href="/login">
+              <Button variant="outline" size="sm">
+                <LogIn className="mr-2 h-4 w-4" />
+                登录
+              </Button>
+            </Link>
+          </div>
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">📅 Rich365 💰</h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-2">每天行动一小步，财富增长一大步</p>
