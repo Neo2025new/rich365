@@ -1,12 +1,29 @@
 "use client"
 
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowRight, Target, Sparkles, Trophy, Calendar, TrendingUp, Users, CheckCircle2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function LandingPage() {
+  const router = useRouter()
+  const { user, loading } = useAuth()
+
+  // 处理"开始使用"按钮点击
+  const handleGetStarted = () => {
+    if (loading) return // 还在加载中，等待
+
+    if (user) {
+      // 已登录，直接进入 onboarding
+      router.push("/onboarding")
+    } else {
+      // 未登录，跳转到登录页，登录后重定向回 onboarding
+      router.push("/login?redirect=/onboarding")
+    }
+  }
   const features = [
     {
       icon: <Target className="h-8 w-8" />,
@@ -76,12 +93,10 @@ export default function LandingPage() {
                 登录
               </Button>
             </Link>
-            <Link href="/onboarding">
-              <Button size="sm" className="font-medium">
-                开始使用
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
+            <Button size="sm" className="font-medium" onClick={handleGetStarted} disabled={loading}>
+              开始使用
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
           </div>
         </div>
       </nav>
@@ -112,12 +127,10 @@ export default function LandingPage() {
               通过 AI 智能推荐 + 游戏化激励，培养财富思维和行动习惯。
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link href="/onboarding">
-                <Button size="lg" className="text-lg px-8 py-6 font-bold">
-                  开始我的搞钱之旅
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              <Button size="lg" className="text-lg px-8 py-6 font-bold" onClick={handleGetStarted} disabled={loading}>
+                开始我的搞钱之旅
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
               <Button variant="outline" size="lg" className="text-lg px-8 py-6">
                 查看演示
               </Button>
@@ -229,12 +242,10 @@ export default function LandingPage() {
                 培养财富思维，成为更会赚钱的自己。
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/onboarding">
-                  <Button size="lg" className="text-lg px-8 py-6 font-bold">
-                    立即免费开始
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </Link>
+                <Button size="lg" className="text-lg px-8 py-6 font-bold" onClick={handleGetStarted} disabled={loading}>
+                  立即免费开始
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
               </div>
             </Card>
           </div>

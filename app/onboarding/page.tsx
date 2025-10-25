@@ -20,7 +20,7 @@ import { toast } from "sonner"
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user, updateProfile } = useAuth()
+  const { user, loading: authLoading, updateProfile } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null)
   const [selectedRole, setSelectedRole] = useState<ProfessionalRole | null>(null)
@@ -30,6 +30,7 @@ export default function OnboardingPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null)
   const [isGeneratingCalendar, setIsGeneratingCalendar] = useState(false)
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
   const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
@@ -43,6 +44,16 @@ export default function OnboardingPage() {
       setUsername(generateRandomUsername())
     }
   }, [])
+
+  // 检查登录状态并显示提示
+  useEffect(() => {
+    if (!authLoading && !user) {
+      setShowLoginPrompt(true)
+      // 5 秒后自动隐藏提示
+      const timer = setTimeout(() => setShowLoginPrompt(false), 8000)
+      return () => clearTimeout(timer)
+    }
+  }, [authLoading, user])
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -149,8 +160,42 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* 未登录提示 */}
+      {showLoginPrompt && !user && (
+        <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 flex-shrink-0" />
+                <p className="text-sm font-medium">
+                  💡 登录后可享受完整功能（AI 日历生成、云端同步、排行榜等）
+                </p>
+              </div>
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => router.push("/login?redirect=/onboarding")}
+                  className="bg-white text-orange-600 hover:bg-gray-100 text-xs"
+                >
+                  立即登录
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowLoginPrompt(false)}
+                  className="text-white hover:bg-white/20 text-xs"
+                >
+                  继续
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Progress Bar */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
+      <div className={`fixed left-0 right-0 z-50 bg-background border-b transition-all ${showLoginPrompt && !user ? "top-[60px]" : "top-0"}`}>
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-2xl font-bold">📅 Rich365</span>
@@ -163,7 +208,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 pt-28 pb-32 max-w-5xl">
+      <div className={`container mx-auto px-4 pb-32 max-w-5xl transition-all ${showLoginPrompt && !user ? "pt-40" : "pt-28"}`}>
         <AnimatePresence mode="wait">
           {/* Step 1: MBTI Selection */}
           {currentStep === 1 && (

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,11 +13,15 @@ import { toast } from "sonner"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const supabase = createClient()
 
   const [isLoading, setIsLoading] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+
+  // 获取重定向参数
+  const redirectTo = searchParams.get("redirect") || "/calendar"
 
   // 邮箱登录
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -32,22 +36,10 @@ export default function LoginPage() {
 
       if (error) throw error
 
-      // 检查用户是否有 profile
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", data.user.id)
-        .single()
-
       toast.success("登录成功！正在跳转...")
 
-      // 如果没有 profile，跳转到 onboarding
-      // 如果有 profile，跳转到日历
-      if (profile) {
-        router.push("/calendar")
-      } else {
-        router.push("/onboarding")
-      }
+      // 使用 redirect 参数或默认跳转到日历
+      router.push(redirectTo)
       router.refresh()
     } catch (error: any) {
       console.error("登录错误:", error)
@@ -73,7 +65,7 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${location.origin}/auth/callback?next=/onboarding`,
+          emailRedirectTo: `${location.origin}/auth/callback?next=${redirectTo}`,
         },
       })
 
@@ -88,9 +80,9 @@ export default function LoginPage() {
 
       // 检查是否自动确认了邮箱
       if (data.session) {
-        // 邮箱已自动确认，直接跳转到 onboarding
+        // 邮箱已自动确认，直接跳转
         toast.success("注册成功！正在跳转...")
-        router.push("/onboarding")
+        router.push(redirectTo)
         router.refresh()
       } else {
         // 需要邮箱验证
@@ -115,7 +107,7 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${location.origin}/auth/callback`,
+          redirectTo: `${location.origin}/auth/callback?next=${redirectTo}`,
         },
       })
 
