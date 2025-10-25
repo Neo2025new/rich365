@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Share2, Download, Check } from "lucide-react"
 import html2canvas from "html2canvas"
 import { useAuth } from "@/contexts/AuthContext"
-import { getUserStatistics } from "@/lib/supabase-checkin"
+import { getUserStats } from "@/lib/supabase-checkin"
 
 interface ShareCardDialogProps {
   date: string
@@ -29,10 +29,8 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
   useEffect(() => {
     const loadStats = async () => {
       if (user) {
-        const stats = await getUserStatistics(user.id)
-        if (stats) {
-          setCurrentStreak(stats.currentStreak)
-        }
+        const stats = await getUserStats(user.id)
+        setCurrentStreak(stats.currentStreak)
       }
     }
     loadStats()
