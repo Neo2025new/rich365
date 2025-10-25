@@ -11,6 +11,7 @@ import { ArrowLeft, Calendar, Download, Printer } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import type { DailyAction, MonthTheme } from "@/lib/calendar-data"
 import html2canvas from "html2canvas"
+import { toast } from "sonner"
 
 const cardColors = [
   "bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-950 dark:to-pink-900",
@@ -73,25 +74,35 @@ export default function MonthClientPage({
 
   // 保存图片
   const handleSaveImage = async () => {
-    if (!calendarRef.current || !theme) return
+    if (!calendarRef.current || !theme) {
+      toast.error("未找到要保存的内容")
+      return
+    }
 
     setIsSaving(true)
 
     try {
+      console.log("[Month Page] 开始生成图片...")
       const canvas = await html2canvas(calendarRef.current, {
         scale: 2,
         backgroundColor: "#ffffff",
         logging: false,
+        useCORS: true,
+        allowTaint: true,
         windowWidth: calendarRef.current.scrollWidth,
         windowHeight: calendarRef.current.scrollHeight,
       })
 
+      console.log("[Month Page] 图片生成成功，准备下载...")
       const link = document.createElement("a")
       link.download = `搞钱日历-${theme.name}.png`
       link.href = canvas.toDataURL("image/png")
       link.click()
+
+      toast.success("图片已保存！")
     } catch (error) {
-      console.error("保存图片失败:", error)
+      console.error("[Month Page] 保存图片失败:", error)
+      toast.error("保存图片失败，请重试")
     } finally {
       setIsSaving(false)
     }

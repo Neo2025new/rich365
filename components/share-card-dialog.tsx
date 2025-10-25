@@ -7,6 +7,7 @@ import { Share2, Download, Check } from "lucide-react"
 import html2canvas from "html2canvas"
 import { useAuth } from "@/contexts/AuthContext"
 import { getUserStats } from "@/lib/supabase-checkin"
+import { toast } from "sonner"
 
 interface ShareCardDialogProps {
   date: string
@@ -37,26 +38,35 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
   }, [user])
 
   const handleDownload = async () => {
-    if (!cardRef.current) return
+    if (!cardRef.current) {
+      toast.error("未找到要保存的内容")
+      return
+    }
 
     setIsGenerating(true)
 
     try {
+      console.log("[ShareCard] 开始生成图片...")
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
         backgroundColor: "#ffffff",
         logging: false,
+        useCORS: true,
+        allowTaint: true,
       })
 
+      console.log("[ShareCard] 图片生成成功，准备下载...")
       const link = document.createElement("a")
       link.download = `搞钱行动-${date}.png`
       link.href = canvas.toDataURL("image/png")
       link.click()
 
+      toast.success("图片已保存！")
       setIsDownloaded(true)
       setTimeout(() => setIsDownloaded(false), 2000)
     } catch (error) {
-      console.error("Failed to generate image:", error)
+      console.error("[ShareCard] 生成图片失败:", error)
+      toast.error("保存图片失败，请重试")
     } finally {
       setIsGenerating(false)
     }
