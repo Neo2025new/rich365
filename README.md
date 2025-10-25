@@ -2,7 +2,7 @@
 
 > 365天财富行动计划 - 每天行动一小步，财富增长一大步
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://richca-liobo5lyr-neos-projects-9448fe10.vercel.app)
+[![Live on rich365.ai](https://img.shields.io/badge/Live%20on-rich365.ai-00D9FF?style=for-the-badge&logo=vercel)](https://rich365.ai)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React 19](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)](https://react.dev/)
 
@@ -29,7 +29,13 @@ Rich365 是一个个性化的财富行动计划应用，根据你的 MBTI 人格
 - **存储**: LocalStorage (纯前端应用)
 - **部署**: Vercel
 
-## 📦 安装运行
+## 🌐 在线体验
+
+**官方网站**: [https://rich365.ai](https://rich365.ai)
+
+立即访问体验 365 天财富行动计划！
+
+## 📦 本地安装运行
 
 ```bash
 # 克隆项目
