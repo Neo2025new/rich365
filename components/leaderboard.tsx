@@ -8,34 +8,46 @@ import {
   getTotalCheckInsLeaderboard,
   getUserRank,
   type LeaderboardEntry,
-} from "@/lib/leaderboard-data"
+} from "@/lib/supabase-leaderboard"
 import { Trophy, Flame, Target, Medal, Crown, Award } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 
 export function Leaderboard() {
+  const { user } = useAuth()
   const [streakLeaderboard, setStreakLeaderboard] = useState<LeaderboardEntry[]>([])
   const [totalLeaderboard, setTotalLeaderboard] = useState<LeaderboardEntry[]>([])
   const [streakRank, setStreakRank] = useState(0)
   const [totalRank, setTotalRank] = useState(0)
 
   useEffect(() => {
-    const updateLeaderboard = () => {
-      setStreakLeaderboard(getStreakLeaderboard())
-      setTotalLeaderboard(getTotalCheckInsLeaderboard())
-      setStreakRank(getUserRank("streak"))
-      setTotalRank(getUserRank("total"))
+    if (user) {
+      updateLeaderboard()
+
+      // Poll for updates
+      const interval = setInterval(updateLeaderboard, 10000)
+
+      return () => {
+        clearInterval(interval)
+      }
     }
+  }, [user])
 
-    updateLeaderboard()
+  const updateLeaderboard = async () => {
+    if (!user) return
 
-    window.addEventListener("storage", updateLeaderboard)
-    const interval = setInterval(updateLeaderboard, 2000)
+    const [streakData, totalData, streakRankData, totalRankData] = await Promise.all([
+      getStreakLeaderboard(user.id, 10),
+      getTotalCheckInsLeaderboard(user.id, 10),
+      getUserRank(user.id, "streak"),
+      getUserRank(user.id, "total"),
+    ])
 
-    return () => {
-      window.removeEventListener("storage", updateLeaderboard)
-      clearInterval(interval)
-    }
-  }, [])
+    setStreakLeaderboard(streakData)
+    setTotalLeaderboard(totalData)
+    setStreakRank(streakRankData.rank)
+    setTotalRank(totalRankData.rank)
+  }
 
   const getRankIcon = (rank: number) => {
     switch (rank) {

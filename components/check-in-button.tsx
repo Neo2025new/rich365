@@ -1,38 +1,70 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, Coins, Flame, Sparkles, Trophy } from "lucide-react"
-import { checkIn, hasCheckedInToday, type Badge } from "@/lib/checkin-data"
+import { checkIn, hasCheckedInToday, type Badge } from "@/lib/supabase-checkin"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
+import { toast } from "sonner"
 
 interface CheckInButtonProps {
   date: string
 }
 
 export function CheckInButton({ date }: CheckInButtonProps) {
-  const [isCheckedIn, setIsCheckedIn] = useState(hasCheckedInToday(date))
+  const { user } = useAuth()
+  const [isCheckedIn, setIsCheckedIn] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [showAnimation, setShowAnimation] = useState(false)
   const [newBadges, setNewBadges] = useState<Badge[]>([])
   const [coins, setCoins] = useState(0)
   const [streak, setStreak] = useState(0)
 
-  const handleCheckIn = () => {
-    if (isCheckedIn) return
+  useEffect(() => {
+    // 检查是否已打卡
+    if (user) {
+      checkIfCheckedIn()
+    } else {
+      setIsLoading(false)
+    }
+  }, [user, date])
 
-    const { stats, newBadges: earnedBadges } = checkIn(date)
+  const checkIfCheckedIn = async () => {
+    if (!user) return
 
-    setIsCheckedIn(true)
-    setCoins(10)
-    setStreak(stats.currentStreak)
-    setNewBadges(earnedBadges)
-    setShowAnimation(true)
+    setIsLoading(true)
+    const checked = await hasCheckedInToday(user.id, date)
+    setIsCheckedIn(checked)
+    setIsLoading(false)
+  }
 
-    // Hide animation after 3 seconds
-    setTimeout(() => {
-      setShowAnimation(false)
-      setNewBadges([])
-    }, 3000)
+  const handleCheckIn = async () => {
+    if (isCheckedIn || !user) return
+
+    setIsLoading(true)
+
+    const result = await checkIn(user.id, date)
+
+    if (result.success && result.stats) {
+      setIsCheckedIn(true)
+      setCoins(10)
+      setStreak(result.stats.currentStreak)
+      setNewBadges(result.newBadges || [])
+      setShowAnimation(true)
+
+      toast.success("打卡成功！+10 金币")
+
+      // Hide animation after 3 seconds
+      setTimeout(() => {
+        setShowAnimation(false)
+        setNewBadges([])
+      }, 3000)
+    } else {
+      toast.error(result.message || "打卡失败，请重试")
+    }
+
+    setIsLoading(false)
   }
 
   return (
@@ -40,13 +72,18 @@ export function CheckInButton({ date }: CheckInButtonProps) {
       <Button
         size="lg"
         onClick={handleCheckIn}
-        disabled={isCheckedIn}
+        disabled={isCheckedIn || isLoading || !user}
         className="text-lg px-8 relative overflow-hidden"
       >
         {isCheckedIn ? (
           <>
             <CheckCircle2 className="mr-2 h-5 w-5" />
             已完成打卡
+          </>
+        ) : isLoading ? (
+          <>
+            <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+            加载中...
           </>
         ) : (
           <>

@@ -1,17 +1,20 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getPersonalizedMonthTheme, mbtiData, roleData } from "@/lib/calendar-data"
-import { ArrowRight, User, Trophy } from "lucide-react"
+import { mbtiData, roleData } from "@/lib/calendar-data"
+import { getMonthTheme } from "@/lib/calendar-hybrid"
+import { ArrowRight, User, Trophy, Sparkles } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function CalendarPage() {
   const router = useRouter()
-  const { profile, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
+  const [monthThemes, setMonthThemes] = useState<Record<number, any>>({})
+  const [isLoadingThemes, setIsLoadingThemes] = useState(true)
 
   useEffect(() => {
     // 如果加载完成且没有 profile，跳转到 onboarding
@@ -20,7 +23,30 @@ export default function CalendarPage() {
     }
   }, [profile, loading, router])
 
-  if (loading) {
+  useEffect(() => {
+    // 加载所有月份的主题
+    if (profile) {
+      loadMonthThemes()
+    }
+  }, [profile, user])
+
+  const loadMonthThemes = async () => {
+    if (!profile) return
+
+    setIsLoadingThemes(true)
+    const themes: Record<number, any> = {}
+
+    // 加载 12 个月的主题
+    for (let month = 1; month <= 12; month++) {
+      const theme = await getMonthTheme(user?.id || null, month, profile)
+      themes[month] = theme
+    }
+
+    setMonthThemes(themes)
+    setIsLoadingThemes(false)
+  }
+
+  if (loading || isLoadingThemes) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -76,17 +102,19 @@ export default function CalendarPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {months.map((month) => {
-            const theme = getPersonalizedMonthTheme(month, profile)
+            const theme = monthThemes[month]
 
             return (
               <Link key={month} href={`/month/${month}`}>
-                <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer group border-2 hover:border-accent">
+                <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer group border-2 hover:border-accent relative">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="text-4xl">{theme.emoji}</div>
-                    <div className="text-sm font-medium text-muted-foreground">{theme.name}</div>
+                    <div className="text-4xl">{theme?.emoji || "📅"}</div>
+                    <div className="text-sm font-medium text-muted-foreground">{theme?.name || `${month}月`}</div>
                   </div>
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">{theme.theme}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{theme.description}</p>
+                  <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
+                    {theme?.theme || "加载中..."}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">{theme?.description || ""}</p>
                   <div className="flex items-center text-sm font-medium text-accent">
                     查看日历
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />

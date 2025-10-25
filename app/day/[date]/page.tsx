@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { getDailyAction } from "@/lib/calendar-data"
+import { getDailyAction } from "@/lib/calendar-hybrid"
+import type { DailyAction } from "@/lib/calendar-data"
 import { ArrowLeft, Sparkles } from "lucide-react"
 import { CheckInButton } from "@/components/check-in-button"
 import { UserStatsCard } from "@/components/user-stats-card"
@@ -25,7 +26,9 @@ export default async function DayPage({
 
 function DayClientPageComponent({ date }: { date: string }) {
   const router = useRouter()
-  const { profile, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
+  const [action, setAction] = useState<DailyAction | null>(null)
+  const [isLoadingAction, setIsLoadingAction] = useState(true)
 
   useEffect(() => {
     // 如果加载完成且没有 profile，跳转到 onboarding
@@ -34,7 +37,33 @@ function DayClientPageComponent({ date }: { date: string }) {
     }
   }, [profile, loading, router])
 
-  if (loading) {
+  useEffect(() => {
+    // 加载单日行动
+    if (profile) {
+      loadDayAction()
+    }
+  }, [profile, user, date])
+
+  const loadDayAction = async () => {
+    if (!profile) return
+
+    setIsLoadingAction(true)
+
+    try {
+      const dailyAction = await getDailyAction(user?.id || null, date, profile)
+      setAction(dailyAction)
+
+      if (!dailyAction) {
+        notFound()
+      }
+    } catch (error) {
+      console.error("[Day Page] 加载行动失败:", error)
+    } finally {
+      setIsLoadingAction(false)
+    }
+  }
+
+  if (loading || isLoadingAction) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -45,14 +74,8 @@ function DayClientPageComponent({ date }: { date: string }) {
     )
   }
 
-  if (!profile) {
+  if (!profile || !action) {
     return null
-  }
-
-  const action = getDailyAction(date, profile)
-
-  if (!action) {
-    notFound()
   }
 
   const dateObj = new Date(date)

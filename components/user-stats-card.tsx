@@ -2,34 +2,48 @@
 
 import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
-import { getUserStats, getEarnedBadges, getNextBadge, type Badge } from "@/lib/checkin-data"
+import { getUserStats, getEarnedBadges, getNextBadge, type Badge, type UserStats } from "@/lib/supabase-checkin"
 import { Coins, Flame, Trophy, Target } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 export function UserStatsCard() {
-  const [stats, setStats] = useState(getUserStats())
+  const { user } = useAuth()
+  const [stats, setStats] = useState<UserStats>({
+    totalCheckIns: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    totalCoins: 0,
+    badges: [],
+  })
   const [earnedBadges, setEarnedBadges] = useState<Badge[]>([])
   const [nextBadge, setNextBadge] = useState<Badge | null>(null)
 
   useEffect(() => {
-    const updateStats = () => {
-      setStats(getUserStats())
-      setEarnedBadges(getEarnedBadges())
-      setNextBadge(getNextBadge())
+    if (user) {
+      updateStats()
+
+      // Poll for updates
+      const interval = setInterval(updateStats, 5000)
+
+      return () => {
+        clearInterval(interval)
+      }
     }
+  }, [user])
 
-    updateStats()
+  const updateStats = async () => {
+    if (!user) return
 
-    // Listen for storage changes
-    window.addEventListener("storage", updateStats)
+    const [userStats, badges, next] = await Promise.all([
+      getUserStats(user.id),
+      getEarnedBadges(user.id),
+      getNextBadge(user.id),
+    ])
 
-    // Poll for updates (in case of same-tab changes)
-    const interval = setInterval(updateStats, 1000)
-
-    return () => {
-      window.removeEventListener("storage", updateStats)
-      clearInterval(interval)
-    }
-  }, [])
+    setStats(userStats)
+    setEarnedBadges(badges)
+    setNextBadge(next)
+  }
 
   return (
     <Card className="p-6">

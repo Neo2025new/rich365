@@ -1,14 +1,15 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getPersonalizedMonthTheme, getPersonalizedDailyActions } from "@/lib/calendar-data"
+import { getMonthTheme, getMonthActions } from "@/lib/calendar-hybrid"
 import { ArrowLeft, Calendar } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import type { DailyAction, MonthTheme } from "@/lib/calendar-data"
 
 const cardColors = [
   "bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-950 dark:to-pink-900",
@@ -26,8 +27,11 @@ export default function MonthClientPage({
   params: { month: string }
 }) {
   const router = useRouter()
-  const { profile, loading } = useAuth()
+  const { user, profile, loading } = useAuth()
   const month = Number.parseInt(params.month)
+  const [theme, setTheme] = useState<MonthTheme | null>(null)
+  const [actions, setActions] = useState<DailyAction[]>([])
+  const [isLoadingData, setIsLoadingData] = useState(true)
 
   useEffect(() => {
     // 如果加载完成且没有 profile，跳转到 onboarding
@@ -36,11 +40,39 @@ export default function MonthClientPage({
     }
   }, [profile, loading, router])
 
+  useEffect(() => {
+    // 加载月度数据
+    if (profile) {
+      loadMonthData()
+    }
+  }, [profile, user, month])
+
+  const loadMonthData = async () => {
+    if (!profile) return
+
+    setIsLoadingData(true)
+    const currentYear = new Date().getFullYear()
+
+    try {
+      const [monthTheme, monthActions] = await Promise.all([
+        getMonthTheme(user?.id || null, month, profile),
+        getMonthActions(user?.id || null, currentYear, month, profile),
+      ])
+
+      setTheme(monthTheme)
+      setActions(monthActions)
+    } catch (error) {
+      console.error("[Month Page] 加载数据失败:", error)
+    } finally {
+      setIsLoadingData(false)
+    }
+  }
+
   if (isNaN(month) || month < 1 || month > 12) {
     notFound()
   }
 
-  if (loading) {
+  if (loading || isLoadingData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -51,15 +83,12 @@ export default function MonthClientPage({
     )
   }
 
-  if (!profile) {
+  if (!profile || !theme) {
     return null
   }
 
   // Use current year dynamically
   const currentYear = new Date().getFullYear()
-
-  const theme = getPersonalizedMonthTheme(month, profile)
-  const actions = getPersonalizedDailyActions(currentYear, month, profile)
 
   // Generate calendar grid
   const daysInMonth = new Date(currentYear, month, 0).getDate()

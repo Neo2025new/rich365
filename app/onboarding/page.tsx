@@ -1,29 +1,48 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { mbtiData, roleData, type MBTIType, type ProfessionalRole } from "@/lib/calendar-data"
-import { Check, ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react"
+import { AVATAR_OPTIONS, getRandomAvatar, generateRandomUsername, type AvatarOption } from "@/lib/avatar-options"
+import { Check, ArrowLeft, ArrowRight, Sparkles, Loader2, User, Smile } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
+import { generateFullYearCalendar } from "@/lib/gemini-calendar"
+import { updateUserDisplayInfo } from "@/lib/supabase-leaderboard"
+import { toast } from "sonner"
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { updateProfile } = useAuth()
+  const { user, updateProfile } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null)
   const [selectedRole, setSelectedRole] = useState<ProfessionalRole | null>(null)
   const [goal, setGoal] = useState("")
+  const [username, setUsername] = useState("")
+  const [selectedAvatar, setSelectedAvatar] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null)
+  const [isGeneratingCalendar, setIsGeneratingCalendar] = useState(false)
 
-  const totalSteps = 3
+  const totalSteps = 4
   const progress = (currentStep / totalSteps) * 100
+
+  // 初始化随机头像和用户名建议
+  useEffect(() => {
+    if (!selectedAvatar) {
+      setSelectedAvatar(getRandomAvatar())
+    }
+    if (!username) {
+      setUsername(generateRandomUsername())
+    }
+  }, [])
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -75,22 +94,46 @@ export default function OnboardingPage() {
       mbti: selectedMBTI,
       role: selectedRole,
       goal: goal || undefined,
+      username: username || generateRandomUsername(),
+      avatar: selectedAvatar || getRandomAvatar(),
     }
 
     try {
       // 使用 AuthContext 的 updateProfile，会自动处理 Supabase 或 LocalStorage
       await updateProfile(profileData)
 
+      // 如果用户已登录，更新用户显示信息并生成 AI 日历
+      if (user) {
+        // 更新用户名和头像到 profiles 表
+        await updateUserDisplayInfo(user.id, profileData.username, profileData.avatar)
+
+        setIsGeneratingCalendar(true)
+        toast.info("正在为你生成个性化的 365 天搞钱日历...")
+
+        const result = await generateFullYearCalendar(user.id, profileData)
+
+        if (result.success) {
+          toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
+        } else {
+          console.error("AI 日历生成失败:", result.message)
+          toast.warning("日历生成失败，将使用默认模板")
+        }
+
+        setIsGeneratingCalendar(false)
+      }
+
       // 跳转到日历页面
       router.push("/calendar")
     } catch (error) {
       console.error("保存 profile 失败:", error)
-      alert("保存失败，请重试")
+      toast.error("保存失败，请重试")
+      setIsGeneratingCalendar(false)
     }
   }
 
   const canProceedStep1 = selectedMBTI !== null
   const canProceedStep2 = selectedRole !== null
+  const canProceedStep4 = username.length >= 2
 
   return (
     <div className="min-h-screen bg-background">
@@ -333,6 +376,127 @@ export default function OnboardingPage() {
               )}
             </motion.div>
           )}
+
+          {/* Step 4: Username and Avatar Selection */}
+          {currentStep === 4 && (
+            <motion.div
+              key="step4"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="mb-8 text-center max-w-2xl mx-auto">
+                <div className="text-6xl mb-4">👤</div>
+                <h1 className="text-3xl md:text-4xl font-bold mb-4">设置你的个人形象</h1>
+                <p className="text-lg text-muted-foreground">选择一个专属头像和用户名，在排行榜上展示你的风采</p>
+              </div>
+
+              <Card className="p-6 mb-8 max-w-3xl mx-auto">
+                {/* Username Input */}
+                <div className="mb-8">
+                  <Label htmlFor="username" className="text-base font-medium mb-2 block flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    用户名
+                  </Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="请输入用户名（至少2个字符）"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="text-lg"
+                    maxLength={20}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {username.length < 2
+                      ? "请输入至少2个字符"
+                      : `看起来不错！（${username.length}/20）`}
+                  </p>
+                </div>
+
+                {/* Avatar Selection */}
+                <div>
+                  <Label className="text-base font-medium mb-4 block flex items-center gap-2">
+                    <Smile className="h-5 w-5" />
+                    选择头像
+                  </Label>
+
+                  <Tabs defaultValue="people" className="w-full">
+                    <TabsList className="grid w-full grid-cols-4 mb-4">
+                      <TabsTrigger value="people">人物</TabsTrigger>
+                      <TabsTrigger value="animals">动物</TabsTrigger>
+                      <TabsTrigger value="objects">物品</TabsTrigger>
+                      <TabsTrigger value="symbols">符号</TabsTrigger>
+                    </TabsList>
+
+                    {(["people", "animals", "objects", "symbols"] as const).map((category) => (
+                      <TabsContent key={category} value={category}>
+                        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
+                          {AVATAR_OPTIONS.filter((avatar) => avatar.category === category).map((avatar) => {
+                            const isSelected = selectedAvatar === avatar.emoji
+
+                            return (
+                              <Card
+                                key={avatar.emoji}
+                                onClick={() => setSelectedAvatar(avatar.emoji)}
+                                className={`p-3 cursor-pointer transition-all duration-300 hover:scale-110 relative ${
+                                  isSelected
+                                    ? "border-2 border-accent shadow-lg bg-accent/10"
+                                    : "border hover:border-accent/50"
+                                }`}
+                                title={avatar.name}
+                              >
+                                {isSelected && (
+                                  <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full p-0.5">
+                                    <Check className="h-3 w-3" />
+                                  </div>
+                                )}
+                                <div className="text-center text-3xl">{avatar.emoji}</div>
+                              </Card>
+                            )
+                          })}
+                        </div>
+                      </TabsContent>
+                    ))}
+                  </Tabs>
+                </div>
+
+                {/* Random Button */}
+                <div className="mt-6 text-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedAvatar(getRandomAvatar())
+                      setUsername(generateRandomUsername())
+                    }}
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    随机生成
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Preview */}
+              {selectedAvatar && username && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center p-6 bg-accent/10 rounded-lg border border-accent/20 max-w-3xl mx-auto"
+                >
+                  <p className="text-sm text-muted-foreground mb-3">预览效果</p>
+                  <div className="flex items-center justify-center gap-3">
+                    <div className="text-4xl">{selectedAvatar}</div>
+                    <div className="text-xl font-bold">{username}</div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    这就是你在排行榜上的显示效果！
+                  </p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -363,14 +527,20 @@ export default function OnboardingPage() {
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             ) : (
-              <div className="flex gap-3">
-                <Button variant="outline" onClick={handleComplete} className="px-6">
-                  跳过此步
-                </Button>
-                <Button onClick={handleComplete} className="px-8">
-                  生成我的日历 🚀
-                </Button>
-              </div>
+              <Button
+                onClick={handleComplete}
+                disabled={!canProceedStep4 || isGeneratingCalendar}
+                className="px-8"
+              >
+                {isGeneratingCalendar ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>生成我的日历 🚀</>
+                )}
+              </Button>
             )}
           </div>
         </div>

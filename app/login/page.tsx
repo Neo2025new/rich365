@@ -32,11 +32,32 @@ export default function LoginPage() {
 
       if (error) throw error
 
-      toast.success("登录成功！")
-      router.push("/calendar")
+      // 检查用户是否有 profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", data.user.id)
+        .single()
+
+      toast.success("登录成功！正在跳转...")
+
+      // 如果没有 profile，跳转到 onboarding
+      // 如果有 profile，跳转到日历
+      if (profile) {
+        router.push("/calendar")
+      } else {
+        router.push("/onboarding")
+      }
       router.refresh()
     } catch (error: any) {
-      toast.error(error.message || "登录失败，请检查邮箱和密码")
+      console.error("登录错误:", error)
+      if (error.message?.includes("Invalid login credentials")) {
+        toast.error("邮箱或密码错误，请重试")
+      } else if (error.message?.includes("Email not confirmed")) {
+        toast.error("请先验证您的邮箱，检查邮件中的验证链接")
+      } else {
+        toast.error(error.message || "登录失败，请重试")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -52,15 +73,35 @@ export default function LoginPage() {
         email,
         password,
         options: {
-          emailRedirectTo: `${location.origin}/auth/callback`,
+          emailRedirectTo: `${location.origin}/auth/callback?next=/onboarding`,
         },
       })
 
       if (error) throw error
 
-      toast.success("注册成功！请检查您的邮箱以验证账户")
+      // 检查是否需要邮箱验证
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        toast.error("该邮箱已被注册，请直接登录")
+        setIsLoading(false)
+        return
+      }
+
+      // 检查是否自动确认了邮箱
+      if (data.session) {
+        // 邮箱已自动确认，直接跳转到 onboarding
+        toast.success("注册成功！正在跳转...")
+        router.push("/onboarding")
+        router.refresh()
+      } else {
+        // 需要邮箱验证
+        toast.success("注册成功！请检查您的邮箱（包括垃圾邮件文件夹）并点击验证链接", {
+          duration: 8000,
+        })
+        toast.info("验证邮箱后即可登录使用", { duration: 8000 })
+      }
     } catch (error: any) {
-      toast.error(error.message || "注册失败")
+      console.error("注册错误:", error)
+      toast.error(error.message || "注册失败，请重试")
     } finally {
       setIsLoading(false)
     }
