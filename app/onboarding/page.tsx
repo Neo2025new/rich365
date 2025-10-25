@@ -410,7 +410,7 @@ export default function OnboardingPage() {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              <div className="mb-8 text-center max-w-2xl mx-auto">
+              <div className="mb-8 text-center max-w-4xl mx-auto">
                 <div className="text-6xl mb-4">🎯</div>
                 <h1 className="text-3xl md:text-4xl font-bold mb-4">
                   设定你的搞钱目标
@@ -420,97 +420,108 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              <Card className="p-6 mb-8 max-w-3xl mx-auto">
-                <label htmlFor="goal" className="text-base font-medium mb-2 block">
-                  你的搞钱目标是什么？
-                </label>
-                <Textarea
-                  id="goal"
-                  placeholder="例如：一年内存到 10 万元、学会投资理财、开发一个赚钱的副业项目、提升职场竞争力..."
-                  value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  className="min-h-[120px] resize-none mb-4"
-                />
+              {/* 左右布局：左边目标输入，右边生成按钮 */}
+              <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* 左侧：目标输入区域 */}
+                <Card className="p-6">
+                  <label htmlFor="goal" className="text-base font-medium mb-2 block">
+                    你的搞钱目标是什么？
+                  </label>
+                  <Textarea
+                    id="goal"
+                    placeholder="例如：一年内存到 10 万元、学会投资理财、开发一个赚钱的副业项目、提升职场竞争力..."
+                    value={goal}
+                    onChange={(e) => setGoal(e.target.value)}
+                    className="min-h-[200px] resize-none mb-4"
+                  />
 
-                {selectedMBTI && selectedRole && goal && (
-                  <Button
-                    onClick={handleGenerateAISuggestions}
-                    disabled={isGenerating}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        AI 生成中...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        获取 AI 行动建议
-                      </>
-                    )}
-                  </Button>
-                )}
+                  {selectedMBTI && selectedRole && goal && (
+                    <Button
+                      onClick={handleGenerateAISuggestions}
+                      disabled={isGenerating}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          AI 生成中...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          获取 AI 行动建议
+                        </>
+                      )}
+                    </Button>
+                  )}
 
-                {aiSuggestions && (
+                  {aiSuggestions && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-6 p-4 bg-accent/10 rounded-lg border border-accent/20"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="h-5 w-5 text-accent" />
+                        <h3 className="font-semibold text-lg">AI 为你推荐的行动</h3>
+                      </div>
+                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">{aiSuggestions}</div>
+                      <p className="text-xs text-muted-foreground mt-3 italic">
+                        💡 这些建议会融入你的 365 天行动日历中
+                      </p>
+                    </motion.div>
+                  )}
+                </Card>
+
+                {/* 右侧：生成日历按钮 */}
+                {selectedMBTI && selectedRole && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-6 p-4 bg-accent/10 rounded-lg border border-accent/20"
+                    className="flex flex-col justify-center"
                   >
-                    <div className="flex items-center gap-2 mb-3">
-                      <Sparkles className="h-5 w-5 text-accent" />
-                      <h3 className="font-semibold text-lg">AI 为你推荐的行动</h3>
-                    </div>
-                    <div className="text-sm text-muted-foreground whitespace-pre-wrap">{aiSuggestions}</div>
-                    <p className="text-xs text-muted-foreground mt-3 italic">
-                      💡 这些建议会融入你的 365 天行动日历中
-                    </p>
+                    <Card className="p-8 bg-gradient-to-br from-orange-500/10 to-pink-500/10 border-accent/20">
+                      <div className="text-center mb-6">
+                        <p className="text-sm text-muted-foreground mb-2">你的搞钱人格</p>
+                        <p className="text-2xl font-bold mb-4">
+                          {mbtiData[selectedMBTI].emoji} {selectedMBTI} · {mbtiData[selectedMBTI].name}
+                        </p>
+                        <p className="text-lg font-semibold mb-4">
+                          × {roleData[selectedRole].emoji} {selectedRole}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          专属于你的搞钱行动即将生成
+                        </p>
+                      </div>
+
+                      {/* 生成日历按钮 */}
+                      <Button
+                        onClick={handleComplete}
+                        disabled={isGeneratingCalendar}
+                        size="lg"
+                        className="w-full bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold py-6 text-lg mb-3"
+                      >
+                        {isGeneratingCalendar ? (
+                          <>
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            生成中...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-5 w-5" />
+                            生成我的专属日历 🚀
+                          </>
+                        )}
+                      </Button>
+
+                      <p className="text-xs text-muted-foreground text-center">
+                        ⏱️ 预计需要 30-60 秒
+                      </p>
+                    </Card>
                   </motion.div>
                 )}
-              </Card>
-
-              {selectedMBTI && selectedRole && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center p-6 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-lg border border-accent/20 max-w-3xl mx-auto"
-                >
-                  <p className="text-sm text-muted-foreground mb-2">你的搞钱人格</p>
-                  <p className="text-xl font-bold mb-4">
-                    {mbtiData[selectedMBTI].emoji} {selectedMBTI} · {mbtiData[selectedMBTI].name} ×{" "}
-                    {roleData[selectedRole].emoji} {selectedRole}
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    专属于你的搞钱行动即将生成
-                  </p>
-
-                  {/* 生成日历按钮 - 放在这里 */}
-                  <Button
-                    onClick={handleComplete}
-                    disabled={isGeneratingCalendar}
-                    size="lg"
-                    className="w-full max-w-md mx-auto bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold py-6 text-lg"
-                  >
-                    {isGeneratingCalendar ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        生成中...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-5 w-5" />
-                        生成我的专属日历 🚀
-                      </>
-                    )}
-                  </Button>
-
-                  <p className="text-xs text-muted-foreground mt-4">
-                    ⏱️ 预计需要 30-60 秒
-                  </p>
-                </motion.div>
-              )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

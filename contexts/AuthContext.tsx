@@ -98,16 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // 只更新提供的字段，避免将 username/avatar 设为 null
+      const updateData: Record<string, any> = {
+        updated_at: new Date().toISOString(),
+      }
+
+      if (newProfile.mbti !== undefined) updateData.mbti = newProfile.mbti
+      if (newProfile.role !== undefined) updateData.role = newProfile.role
+      if (newProfile.goal !== undefined) updateData.goal = newProfile.goal
+      if (newProfile.username !== undefined) updateData.username = newProfile.username
+      if (newProfile.avatar !== undefined) updateData.avatar = newProfile.avatar
+
       const { error } = await supabase
         .from("profiles")
-        .update({
-          mbti: newProfile.mbti || null,
-          role: newProfile.role || null,
-          goal: newProfile.goal || null,
-          username: newProfile.username || null,
-          avatar: newProfile.avatar || null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", user.id)
 
       if (error) {
@@ -115,8 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw error
       }
 
-      // 更新本地状态
-      setProfile(newProfile)
+      // 更新本地状态（合并而不是替换）
+      setProfile(prev => ({ ...prev, ...newProfile }))
     } catch (error) {
       console.error("[AuthContext] 更新 profile 异常:", error)
       throw error
