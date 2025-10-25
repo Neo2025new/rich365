@@ -17,7 +17,7 @@ type GenerationPhase = "preparing" | "generating" | "saving" | "complete"
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const { user, loading: authLoading, updateProfile } = useAuth()
+  const { user, profile, loading: authLoading, updateProfile } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null)
   const [selectedRole, setSelectedRole] = useState<ProfessionalRole | null>(null)
@@ -43,6 +43,14 @@ export default function OnboardingPage() {
       return () => clearTimeout(timer)
     }
   }, [authLoading, user])
+
+  // 检查 profile 是否已完整，如果完整则跳转到 calendar（老用户）
+  useEffect(() => {
+    if (!authLoading && profile && profile.mbti && profile.role) {
+      console.log("[Onboarding] ✅ 检测到完整 profile，跳转到 calendar")
+      router.push("/calendar")
+    }
+  }, [authLoading, profile, router])
 
   const handleNext = () => {
     if (currentStep < totalSteps) {

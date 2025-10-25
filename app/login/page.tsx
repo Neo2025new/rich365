@@ -20,8 +20,8 @@ function LoginPageContent() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
 
-  // 获取重定向参数
-  const redirectTo = searchParams.get("redirect") || "/calendar"
+  // 获取重定向参数（默认跳转到 onboarding，让 onboarding 页面决定是否跳转到 calendar）
+  const redirectTo = searchParams.get("redirect") || "/onboarding"
 
   // 邮箱登录
   const handleEmailLogin = async (e: React.FormEvent) => {
