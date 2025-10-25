@@ -70,21 +70,24 @@ export function AppHeader() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="gap-2">
-                <User className="h-4 w-4" />
-                <span className="hidden md:inline">
-                  {mbtiData[profile.mbti].emoji} {profile.mbti} · {profile.role.slice(0, 4)}
+                <span className="text-xl">{profile.avatar || "⭐"}</span>
+                <span className="hidden md:inline font-medium">
+                  {profile.username || "未命名用户"}
                 </span>
-                <span className="md:hidden">{profile.mbti}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">个人资料</p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {mbtiData[profile.mbti].emoji} {profile.mbti} · {mbtiData[profile.mbti].name}
-                  </p>
-                  <p className="text-xs leading-none text-muted-foreground">{profile.role}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{profile.avatar || "⭐"}</span>
+                    <div>
+                      <p className="text-sm font-medium leading-none">{profile.username || "未命名用户"}</p>
+                      <p className="text-xs leading-none text-muted-foreground mt-1">
+                        {mbtiData[profile.mbti].emoji} {profile.mbti} · {profile.role}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

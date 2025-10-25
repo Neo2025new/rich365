@@ -43,6 +43,8 @@ export type UserProfile = {
   mbti: MBTIType
   role: ProfessionalRole
   goal?: string // 用户的搞钱目标（选填）
+  username?: string // 用户名
+  avatar?: string // 头像 emoji
 }
 
 // MBTI personality data with icons
