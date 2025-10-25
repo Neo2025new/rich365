@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/AuthContext"
 
 export default function CalendarPage() {
   const router = useRouter()
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading, error: authError, retryLoad } = useAuth()
   const [monthThemes, setMonthThemes] = useState<Record<number, any>>({})
   const [isLoadingThemes, setIsLoadingThemes] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -150,6 +150,27 @@ export default function CalendarPage() {
       setLoadError(error instanceof Error ? error.message : "加载失败")
       setIsLoadingThemes(false)
     }
+  }
+
+  // 显示认证错误
+  if (authError && !loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md px-4">
+          <div className="text-4xl mb-4">❌</div>
+          <p className="text-lg font-semibold mb-2">认证加载失败</p>
+          <p className="text-muted-foreground mb-4">{authError}</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={retryLoad} variant="default">
+              重试
+            </Button>
+            <Button onClick={() => window.location.reload()} variant="outline">
+              刷新页面
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (loading || isLoadingThemes) {
