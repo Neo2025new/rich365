@@ -5,18 +5,15 @@ import { useRouter } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { mbtiData, roleData, type MBTIType, type ProfessionalRole } from "@/lib/calendar-data"
-import { AVATAR_OPTIONS, getRandomAvatar, generateRandomUsername, type AvatarOption } from "@/lib/avatar-options"
-import { Check, ArrowLeft, ArrowRight, Sparkles, Loader2, User, Smile } from "lucide-react"
+import { Check, ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/AuthContext"
-// import { generateFullYearCalendar } from "@/lib/gemini-calendar" // 改用 API 调用
-import { updateUserDisplayInfo } from "@/lib/supabase-leaderboard"
 import { toast } from "sonner"
+import CalendarGeneratingModal from "@/components/CalendarGeneratingModal"
+
+type GenerationPhase = "preparing" | "generating" | "saving" | "complete"
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -25,31 +22,23 @@ export default function OnboardingPage() {
   const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null)
   const [selectedRole, setSelectedRole] = useState<ProfessionalRole | null>(null)
   const [goal, setGoal] = useState("")
-  const [username, setUsername] = useState("")
-  const [selectedAvatar, setSelectedAvatar] = useState<string>("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [aiSuggestions, setAiSuggestions] = useState<string | null>(null)
-  const [isGeneratingCalendar, setIsGeneratingCalendar] = useState(false)
   const [showLoginPrompt, setShowLoginPrompt] = useState(false)
 
-  const totalSteps = 4
-  const progress = (currentStep / totalSteps) * 100
+  // 新增：生成进度相关状态
+  const [isGeneratingCalendar, setIsGeneratingCalendar] = useState(false)
+  const [generationPhase, setGenerationPhase] = useState<GenerationPhase>("preparing")
+  const [generationProgress, setGenerationProgress] = useState(0)
+  const [currentAction, setCurrentAction] = useState<string>()
 
-  // 初始化随机头像和用户名建议
-  useEffect(() => {
-    if (!selectedAvatar) {
-      setSelectedAvatar(getRandomAvatar())
-    }
-    if (!username) {
-      setUsername(generateRandomUsername())
-    }
-  }, [])
+  const totalSteps = 3 // 从 4 步改为 3 步
+  const progress = (currentStep / totalSteps) * 100
 
   // 检查登录状态并显示提示
   useEffect(() => {
     if (!authLoading && !user) {
       setShowLoginPrompt(true)
-      // 5 秒后自动隐藏提示
       const timer = setTimeout(() => setShowLoginPrompt(false), 8000)
       return () => clearTimeout(timer)
     }
@@ -92,7 +81,7 @@ export default function OnboardingPage() {
       setAiSuggestions(data.actions)
     } catch (error) {
       console.error("AI 生成失败:", error)
-      alert("AI 生成失败，请稍后重试")
+      toast.error("AI 生成失败，请稍后重试")
     } finally {
       setIsGenerating(false)
     }
@@ -101,39 +90,39 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     if (!selectedMBTI || !selectedRole) return
 
-    console.log("[Onboarding] ========== 开始完成设置 ==========")
+    console.log("[Onboarding] ========== 开始生成日历 ==========")
     console.log("[Onboarding] 用户信息:", { userId: user?.id, isLoggedIn: !!user })
 
     const profileData = {
       mbti: selectedMBTI,
       role: selectedRole,
       goal: goal || undefined,
-      username: username || generateRandomUsername(),
-      avatar: selectedAvatar || getRandomAvatar(),
     }
 
     try {
-      console.log("[Onboarding] [步骤 1/5] 准备更新 profile 数据:", profileData)
+      // Phase 1: 准备生成
+      setIsGeneratingCalendar(true)
+      setGenerationPhase("preparing")
+      setGenerationProgress(10)
+      console.log("[Onboarding] [Phase 1/4] 准备生成...")
 
-      // 使用 AuthContext 的 updateProfile，会自动处理 Supabase 或 LocalStorage
+      // 更新 profile（不包括 username 和 avatar，这些已经在注册时自动生成）
       await updateProfile(profileData)
-      console.log("[Onboarding] [步骤 2/5] ✅ Profile 更新完成")
+      console.log("[Onboarding] ✅ Profile 更新完成")
 
-      // 如果用户已登录，更新用户显示信息并生成 AI 日历
+      setGenerationProgress(20)
+
+      // 如果用户已登录，生成 AI 日历
       if (user) {
-        console.log("[Onboarding] [步骤 3/5] 用户已登录，开始后续流程")
+        console.log("[Onboarding] 用户已登录，开始生成 AI 日历")
 
-        // 更新用户名和头像到 profiles 表
-        console.log("[Onboarding] 更新用户显示信息...")
-        await updateUserDisplayInfo(user.id, profileData.username, profileData.avatar)
-        console.log("[Onboarding] ✅ 用户显示信息更新完成")
+        // Phase 2: AI 生成中
+        setGenerationPhase("generating")
+        setGenerationProgress(30)
+        setCurrentAction("正在为你定制第一个月的搞钱行动...")
 
-        setIsGeneratingCalendar(true)
-        toast.info("正在为你生成个性化的 365 天搞钱日历...")
-
-        // 调用 API 生成日历
-        console.log("[Onboarding] 开始调用 AI 日历生成 API...")
-        const response = await fetch("/api/generate-calendar", {
+        console.log("[Onboarding] 调用 Progressive API 生成第一个月...")
+        const response = await fetch("/api/generate-calendar-progressive", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -141,54 +130,84 @@ export default function OnboardingPage() {
           body: JSON.stringify({
             userId: user.id,
             profile: profileData,
+            phase: "initial", // 先生成第一个月
           }),
         })
 
         const result = await response.json()
 
         if (result.success) {
-          console.log("[Onboarding] ✅ AI 日历生成成功，行动数:", result.actionsCount)
-          toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
-        } else {
-          console.error("[Onboarding] ⚠️ AI 日历生成失败:", result.message)
-          toast.warning(result.message || "日历生成失败，将使用默认模板")
-        }
+          console.log("[Onboarding] ✅ 第一个月生成成功，行动数:", result.actionsCount)
+          setGenerationProgress(60)
 
-        setIsGeneratingCalendar(false)
-        console.log("[Onboarding] [步骤 4/5] ✅ AI 日历生成流程完成")
+          // Phase 3: 保存数据
+          setGenerationPhase("saving")
+          setGenerationProgress(80)
+          console.log("[Onboarding] 保存数据中...")
+
+          // 模拟保存完成
+          await new Promise(resolve => setTimeout(resolve, 800))
+
+          setGenerationProgress(100)
+
+          // Phase 4: 完成
+          setGenerationPhase("complete")
+          console.log("[Onboarding] ✅ 日历生成完成")
+
+          toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
+
+          // 等待 2 秒显示完成状态
+          await new Promise(resolve => setTimeout(resolve, 2000))
+        } else {
+          console.error("[Onboarding] ⚠️ AI 日历生成失败:", result.error)
+          toast.error(result.error || "日历生成失败，请重试")
+          setIsGeneratingCalendar(false)
+          return
+        }
       } else {
-        console.log("[Onboarding] [步骤 3/5] 用户未登录，跳过 AI 日历生成")
+        console.log("[Onboarding] 用户未登录，跳过 AI 日历生成")
+        setGenerationPhase("complete")
+        setGenerationProgress(100)
       }
 
-      // 等待额外的时间，确保所有状态已经传播
-      console.log("[Onboarding] 等待 800ms 确保状态同步...")
-      await new Promise(resolve => setTimeout(resolve, 800))
+      // 等待确保所有状态已经传播
+      console.log("[Onboarding] 等待 500ms 确保状态同步...")
+      await new Promise(resolve => setTimeout(resolve, 500))
 
-      console.log("[Onboarding] [步骤 5/5] 准备跳转到日历页面")
+      console.log("[Onboarding] 准备跳转到日历页面")
 
-      // 设置标记，告诉日历页面我们刚完成 onboarding
+      // 设置标记
       sessionStorage.setItem("onboarding_just_completed", "true")
       sessionStorage.setItem("onboarding_profile", JSON.stringify(profileData))
 
-      console.log("[Onboarding] ✅ SessionStorage 标记已设置，即将跳转...")
+      console.log("[Onboarding] ✅ 即将跳转到日历...")
 
-      // 使用 replace 避免返回键问题
+      // 跳转
       router.replace("/calendar")
 
       console.log("[Onboarding] ========== 完成流程结束 ==========")
     } catch (error) {
-      console.error("[Onboarding] ❌ 保存 profile 失败:", error)
-      toast.error("保存失败，请重试")
+      console.error("[Onboarding] ❌ 生成失败:", error)
+      toast.error("生成失败，请重试")
       setIsGeneratingCalendar(false)
+      setGenerationPhase("preparing")
+      setGenerationProgress(0)
     }
   }
 
   const canProceedStep1 = selectedMBTI !== null
   const canProceedStep2 = selectedRole !== null
-  const canProceedStep4 = username.length >= 2
 
   return (
     <div className="min-h-screen bg-background">
+      {/* 生成进度模态框 */}
+      <CalendarGeneratingModal
+        isOpen={isGeneratingCalendar}
+        currentPhase={generationPhase}
+        progress={generationProgress}
+        currentAction={currentAction}
+      />
+
       {/* 未登录提示 */}
       {showLoginPrompt && !user && (
         <div className="fixed top-0 left-0 right-0 z-[60] bg-gradient-to-r from-orange-500 to-pink-500 text-white shadow-lg">
@@ -374,7 +393,7 @@ export default function OnboardingPage() {
             </motion.div>
           )}
 
-          {/* Step 3: Goal Input */}
+          {/* Step 3: Goal Input + Generate Calendar */}
           {currentStep === 3 && (
             <motion.div
               key="step3"
@@ -394,9 +413,9 @@ export default function OnboardingPage() {
               </div>
 
               <Card className="p-6 mb-8 max-w-3xl mx-auto">
-                <Label htmlFor="goal" className="text-base font-medium mb-2 block">
+                <label htmlFor="goal" className="text-base font-medium mb-2 block">
                   你的搞钱目标是什么？
-                </Label>
+                </label>
                 <Textarea
                   id="goal"
                   placeholder="例如：一年内存到 10 万元、学会投资理财、开发一个赚钱的副业项目、提升职场竞争力..."
@@ -448,136 +467,39 @@ export default function OnboardingPage() {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center p-6 bg-accent/10 rounded-lg border border-accent/20 max-w-3xl mx-auto"
+                  className="text-center p-6 bg-gradient-to-r from-orange-500/10 to-pink-500/10 rounded-lg border border-accent/20 max-w-3xl mx-auto"
                 >
                   <p className="text-sm text-muted-foreground mb-2">你的搞钱人格</p>
-                  <p className="text-xl font-bold">
+                  <p className="text-xl font-bold mb-4">
                     {mbtiData[selectedMBTI].emoji} {selectedMBTI} · {mbtiData[selectedMBTI].name} ×{" "}
                     {roleData[selectedRole].emoji} {selectedRole}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    专属于你的 365 个搞钱行动即将生成
+                  <p className="text-sm text-muted-foreground mb-6">
+                    专属于你的搞钱行动即将生成
                   </p>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
 
-          {/* Step 4: Username and Avatar Selection */}
-          {currentStep === 4 && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="mb-8 text-center max-w-2xl mx-auto">
-                <div className="text-6xl mb-4">👤</div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">设置你的个人形象</h1>
-                <p className="text-lg text-muted-foreground">选择一个专属头像和用户名，在排行榜上展示你的风采</p>
-              </div>
-
-              <Card className="p-6 mb-8 max-w-3xl mx-auto">
-                {/* Username Input */}
-                <div className="mb-8">
-                  <Label htmlFor="username" className="text-base font-medium mb-2 block flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    用户名
-                  </Label>
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="请输入用户名（至少2个字符）"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="text-lg"
-                    maxLength={20}
-                  />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {username.length < 2
-                      ? "请输入至少2个字符"
-                      : `看起来不错！（${username.length}/20）`}
-                  </p>
-                </div>
-
-                {/* Avatar Selection */}
-                <div>
-                  <Label className="text-base font-medium mb-4 block flex items-center gap-2">
-                    <Smile className="h-5 w-5" />
-                    选择头像
-                  </Label>
-
-                  <Tabs defaultValue="people" className="w-full">
-                    <TabsList className="grid w-full grid-cols-4 mb-4">
-                      <TabsTrigger value="people">人物</TabsTrigger>
-                      <TabsTrigger value="animals">动物</TabsTrigger>
-                      <TabsTrigger value="objects">物品</TabsTrigger>
-                      <TabsTrigger value="symbols">符号</TabsTrigger>
-                    </TabsList>
-
-                    {(["people", "animals", "objects", "symbols"] as const).map((category) => (
-                      <TabsContent key={category} value={category}>
-                        <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
-                          {AVATAR_OPTIONS.filter((avatar) => avatar.category === category).map((avatar) => {
-                            const isSelected = selectedAvatar === avatar.emoji
-
-                            return (
-                              <Card
-                                key={avatar.emoji}
-                                onClick={() => setSelectedAvatar(avatar.emoji)}
-                                className={`p-3 cursor-pointer transition-all duration-300 hover:scale-110 relative ${
-                                  isSelected
-                                    ? "border-2 border-accent shadow-lg bg-accent/10"
-                                    : "border hover:border-accent/50"
-                                }`}
-                                title={avatar.name}
-                              >
-                                {isSelected && (
-                                  <div className="absolute -top-1 -right-1 bg-accent text-accent-foreground rounded-full p-0.5">
-                                    <Check className="h-3 w-3" />
-                                  </div>
-                                )}
-                                <div className="text-center text-3xl">{avatar.emoji}</div>
-                              </Card>
-                            )
-                          })}
-                        </div>
-                      </TabsContent>
-                    ))}
-                  </Tabs>
-                </div>
-
-                {/* Random Button */}
-                <div className="mt-6 text-center">
+                  {/* 生成日历按钮 - 放在这里 */}
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedAvatar(getRandomAvatar())
-                      setUsername(generateRandomUsername())
-                    }}
+                    onClick={handleComplete}
+                    disabled={isGeneratingCalendar}
+                    size="lg"
+                    className="w-full max-w-md mx-auto bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold py-6 text-lg"
                   >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    随机生成
+                    {isGeneratingCalendar ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        生成中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-5 w-5" />
+                        生成我的专属日历 🚀
+                      </>
+                    )}
                   </Button>
-                </div>
-              </Card>
 
-              {/* Preview */}
-              {selectedAvatar && username && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-center p-6 bg-accent/10 rounded-lg border border-accent/20 max-w-3xl mx-auto"
-                >
-                  <p className="text-sm text-muted-foreground mb-3">预览效果</p>
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="text-4xl">{selectedAvatar}</div>
-                    <div className="text-xl font-bold">{username}</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-3">
-                    这就是你在排行榜上的显示效果！
+                  <p className="text-xs text-muted-foreground mt-4">
+                    ⏱️ 预计需要 30-60 秒
                   </p>
                 </motion.div>
               )}
@@ -586,21 +508,21 @@ export default function OnboardingPage() {
         </AnimatePresence>
       </div>
 
-      {/* Navigation Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t py-6">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <div className="flex justify-between items-center">
-            <Button
-              variant="ghost"
-              onClick={handleBack}
-              disabled={currentStep === 1}
-              className="px-6"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              上一步
-            </Button>
+      {/* Navigation Buttons - 只在前两步显示 */}
+      {currentStep < 3 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t py-6">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="flex justify-between items-center">
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                disabled={currentStep === 1}
+                className="px-6"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                上一步
+              </Button>
 
-            {currentStep < totalSteps ? (
               <Button
                 onClick={handleNext}
                 disabled={
@@ -612,25 +534,28 @@ export default function OnboardingPage() {
                 下一步
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-            ) : (
-              <Button
-                onClick={handleComplete}
-                disabled={!canProceedStep4 || isGeneratingCalendar}
-                className="px-8"
-              >
-                {isGeneratingCalendar ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    生成中...
-                  </>
-                ) : (
-                  <>生成我的日历 🚀</>
-                )}
-              </Button>
-            )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* 第 3 步也有返回按钮 */}
+      {currentStep === 3 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-background border-t py-6">
+          <div className="container mx-auto px-4 max-w-5xl">
+            <div className="flex justify-center">
+              <Button
+                variant="ghost"
+                onClick={handleBack}
+                className="px-6"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                上一步
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
