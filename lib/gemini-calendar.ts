@@ -18,7 +18,16 @@ export async function generateFullYearCalendar(
     console.log(`[AI Calendar] 开始为用户 ${userId} 生成日历...`)
     console.log(`[AI Calendar] 用户配置:`, profile)
 
-    // 1. 检查是否已经生成过
+    // 1. 检查 API 密钥
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("[AI Calendar] ❌ GEMINI_API_KEY 未设置")
+      return {
+        success: false,
+        message: "服务器配置错误：API 密钥未设置",
+      }
+    }
+
+    // 2. 检查是否已经生成过
     const supabase = createClient()
     const { count } = await supabase
       .from("daily_actions")
@@ -34,19 +43,50 @@ export async function generateFullYearCalendar(
       }
     }
 
-    // 2. 构建详细的 AI prompt
+    // 3. 构建详细的 AI prompt
     const year = new Date().getFullYear()
     const prompt = buildPrompt(year, profile)
 
-    // 3. 调用 Gemini AI 生成
+    // 4. 调用 Gemini AI 生成
     console.log(`[AI Calendar] 调用 Gemini AI...`)
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
-    const result = await model.generateContent(prompt)
-    const text = result.response.text()
 
+    let result
+    try {
+      result = await model.generateContent(prompt)
+    } catch (apiError: any) {
+      console.error("[AI Calendar] Gemini API 调用失败:", apiError)
+
+      // 检查具体的 API 错误类型
+      if (apiError.message?.includes("API_KEY_HTTP_REFERRER_BLOCKED")) {
+        return {
+          success: false,
+          message: "API 密钥被限制，请联系管理员修复配置",
+        }
+      } else if (apiError.message?.includes("API_KEY_INVALID")) {
+        return {
+          success: false,
+          message: "API 密钥无效，请联系管理员",
+        }
+      } else if (apiError.message?.includes("quota")) {
+        return {
+          success: false,
+          message: "API 配额已用完，请稍后重试",
+        }
+      } else if (apiError.status === 403) {
+        return {
+          success: false,
+          message: "API 访问被拒绝，请检查密钥配置",
+        }
+      } else {
+        throw apiError
+      }
+    }
+
+    const text = result.response.text()
     console.log(`[AI Calendar] AI 响应长度: ${text.length} 字符`)
 
-    // 4. 解析 JSON 响应
+    // 5. 解析 JSON 响应
     const actions = parseAIResponse(text)
     console.log(`[AI Calendar] 解析到 ${actions.length} 个行动`)
 
@@ -54,7 +94,7 @@ export async function generateFullYearCalendar(
       throw new Error("AI 未生成任何行动")
     }
 
-    // 5. 保存到数据库
+    // 6. 保存到数据库
     console.log(`[AI Calendar] 开始保存到数据库...`)
     await saveActionsToDatabase(userId, actions)
 
@@ -69,7 +109,7 @@ export async function generateFullYearCalendar(
     console.error("[AI Calendar] 错误:", error)
     return {
       success: false,
-      message: error instanceof Error ? error.message : "生成失败",
+      message: error instanceof Error ? error.message : "生成失败，请稍后重试",
     }
   }
 }
