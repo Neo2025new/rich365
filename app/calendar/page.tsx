@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Card } from "@/components/ui/card"
@@ -16,13 +16,91 @@ export default function CalendarPage() {
   const [monthThemes, setMonthThemes] = useState<Record<number, any>>({})
   const [isLoadingThemes, setIsLoadingThemes] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const redirectAttempted = useRef(false)
+  const [waitingForProfile, setWaitingForProfile] = useState(false)
 
   useEffect(() => {
-    // 如果加载完成且没有 profile，跳转到 onboarding
-    if (!loading && !profile) {
-      router.push("/onboarding")
+    // 检查是否刚从 onboarding 完成
+    const justCompleted = sessionStorage.getItem("onboarding_just_completed")
+    const savedProfile = sessionStorage.getItem("onboarding_profile")
+
+    if (justCompleted) {
+      console.log("[Calendar Page] ========== 检测到刚完成 onboarding ==========")
+      console.log("[Calendar Page] 保存的 profile 数据:", savedProfile)
+      setWaitingForProfile(true)
+
+      // 设置超时，如果 5 秒后还没有 profile，停止等待
+      const timeout = setTimeout(() => {
+        console.log("[Calendar Page] ⏱️ 等待超时（5秒），停止等待")
+        setWaitingForProfile(false)
+
+        // 清理 sessionStorage
+        sessionStorage.removeItem("onboarding_just_completed")
+        sessionStorage.removeItem("onboarding_profile")
+      }, 5000)
+
+      return () => {
+        clearTimeout(timeout)
+      }
     }
-  }, [profile, loading, router])
+  }, [])
+
+  useEffect(() => {
+    console.log("[Calendar Page] 状态检查:", {
+      loading,
+      hasUser: !!user,
+      userId: user?.id,
+      hasProfile: !!profile,
+      profileMbti: profile?.mbti,
+      waitingForProfile,
+      redirectAttempted: redirectAttempted.current,
+    })
+
+    // 如果检测到 profile 已加载
+    if (profile) {
+      if (waitingForProfile) {
+        console.log("[Calendar Page] ✅ Profile 已加载，停止等待")
+        setWaitingForProfile(false)
+
+        // 清理 sessionStorage
+        sessionStorage.removeItem("onboarding_just_completed")
+        sessionStorage.removeItem("onboarding_profile")
+      }
+      return
+    }
+
+    // 如果正在等待 profile 更新，暂时不检查重定向
+    if (waitingForProfile) {
+      console.log("[Calendar Page] ⏳ 正在等待 profile 加载...")
+      return
+    }
+
+    // 如果加载完成且没有 profile，跳转到 onboarding
+    if (!loading && !profile && !redirectAttempted.current) {
+      console.log("[Calendar Page] ⚠️ 没有 profile，准备重定向到 onboarding")
+      console.log("[Calendar Page] 检查 sessionStorage 备份...")
+
+      // 最后尝试从 sessionStorage 获取备份
+      const savedProfile = sessionStorage.getItem("onboarding_profile")
+      if (savedProfile) {
+        console.log("[Calendar Page] 发现 sessionStorage 备份，但 AuthContext 未加载")
+        console.log("[Calendar Page] 这可能是状态同步问题，再等待 1 秒...")
+
+        // 再给一次机会
+        setTimeout(() => {
+          if (!profile && !redirectAttempted.current) {
+            console.log("[Calendar Page] ❌ 最终确认没有 profile，重定向到 onboarding")
+            redirectAttempted.current = true
+            router.push("/onboarding")
+          }
+        }, 1000)
+      } else {
+        console.log("[Calendar Page] ❌ 没有备份数据，立即重定向到 onboarding")
+        redirectAttempted.current = true
+        router.push("/onboarding")
+      }
+    }
+  }, [profile, loading, router, waitingForProfile, user])
 
   useEffect(() => {
     // 加载所有月份的主题

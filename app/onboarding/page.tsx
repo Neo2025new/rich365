@@ -101,6 +101,9 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     if (!selectedMBTI || !selectedRole) return
 
+    console.log("[Onboarding] ========== 开始完成设置 ==========")
+    console.log("[Onboarding] 用户信息:", { userId: user?.id, isLoggedIn: !!user })
+
     const profileData = {
       mbti: selectedMBTI,
       role: selectedRole,
@@ -110,18 +113,26 @@ export default function OnboardingPage() {
     }
 
     try {
+      console.log("[Onboarding] [步骤 1/5] 准备更新 profile 数据:", profileData)
+
       // 使用 AuthContext 的 updateProfile，会自动处理 Supabase 或 LocalStorage
       await updateProfile(profileData)
+      console.log("[Onboarding] [步骤 2/5] ✅ Profile 更新完成")
 
       // 如果用户已登录，更新用户显示信息并生成 AI 日历
       if (user) {
+        console.log("[Onboarding] [步骤 3/5] 用户已登录，开始后续流程")
+
         // 更新用户名和头像到 profiles 表
+        console.log("[Onboarding] 更新用户显示信息...")
         await updateUserDisplayInfo(user.id, profileData.username, profileData.avatar)
+        console.log("[Onboarding] ✅ 用户显示信息更新完成")
 
         setIsGeneratingCalendar(true)
         toast.info("正在为你生成个性化的 365 天搞钱日历...")
 
         // 调用 API 生成日历
+        console.log("[Onboarding] 开始调用 AI 日历生成 API...")
         const response = await fetch("/api/generate-calendar", {
           method: "POST",
           headers: {
@@ -136,19 +147,37 @@ export default function OnboardingPage() {
         const result = await response.json()
 
         if (result.success) {
+          console.log("[Onboarding] ✅ AI 日历生成成功，行动数:", result.actionsCount)
           toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
         } else {
-          console.error("AI 日历生成失败:", result.message)
-          toast.warning("日历生成失败，将使用默认模板")
+          console.error("[Onboarding] ⚠️ AI 日历生成失败:", result.message)
+          toast.warning(result.message || "日历生成失败，将使用默认模板")
         }
 
         setIsGeneratingCalendar(false)
+        console.log("[Onboarding] [步骤 4/5] ✅ AI 日历生成流程完成")
+      } else {
+        console.log("[Onboarding] [步骤 3/5] 用户未登录，跳过 AI 日历生成")
       }
 
-      // 跳转到日历页面
-      router.push("/calendar")
+      // 等待额外的时间，确保所有状态已经传播
+      console.log("[Onboarding] 等待 800ms 确保状态同步...")
+      await new Promise(resolve => setTimeout(resolve, 800))
+
+      console.log("[Onboarding] [步骤 5/5] 准备跳转到日历页面")
+
+      // 设置标记，告诉日历页面我们刚完成 onboarding
+      sessionStorage.setItem("onboarding_just_completed", "true")
+      sessionStorage.setItem("onboarding_profile", JSON.stringify(profileData))
+
+      console.log("[Onboarding] ✅ SessionStorage 标记已设置，即将跳转...")
+
+      // 使用 replace 避免返回键问题
+      router.replace("/calendar")
+
+      console.log("[Onboarding] ========== 完成流程结束 ==========")
     } catch (error) {
-      console.error("保存 profile 失败:", error)
+      console.error("[Onboarding] ❌ 保存 profile 失败:", error)
       toast.error("保存失败，请重试")
       setIsGeneratingCalendar(false)
     }

@@ -173,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) {
       // 已登录：更新 Supabase
       try {
+        console.log("[AuthContext] updateProfile 开始, userId:", user.id, "newProfile:", newProfile)
+
         const { error } = await supabase
           .from("profiles")
           .upsert({
@@ -185,16 +187,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           })
           .eq("id", user.id)
 
-        if (error) throw error
+        if (error) {
+          console.error("[AuthContext] updateProfile 数据库更新失败:", error)
+          throw error
+        }
 
+        console.log("[AuthContext] 数据库更新成功，立即设置 profile state")
+
+        // 立即更新本地状态
         setProfile(newProfile)
         localStorage.setItem("userProfile", JSON.stringify(newProfile))
+
+        console.log("[AuthContext] Profile state 已更新")
+
+        // 等待一小段时间，确保状态传播到所有组件
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        console.log("[AuthContext] updateProfile 完成")
       } catch (error) {
-        console.error("Error updating profile:", error)
+        console.error("[AuthContext] updateProfile 错误:", error)
         throw error
       }
     } else {
       // 未登录：只更新 localStorage
+      console.log("[AuthContext] 未登录用户，仅更新 localStorage")
       setProfile(newProfile)
       localStorage.setItem("userProfile", JSON.stringify(newProfile))
     }

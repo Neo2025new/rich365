@@ -29,6 +29,7 @@ function LoginPageContent() {
     setIsLoading(true)
 
     try {
+      console.log("[Login] 开始邮箱登录...")
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -36,13 +37,18 @@ function LoginPageContent() {
 
       if (error) throw error
 
+      console.log("[Login] ✅ 登录成功，用户:", data.user?.id)
       toast.success("登录成功！正在跳转...")
 
+      // 等待一小段时间，让 AuthContext 更新状态
+      await new Promise(resolve => setTimeout(resolve, 500))
+
+      console.log("[Login] 跳转到:", redirectTo)
       // 使用 redirect 参数或默认跳转到日历
       router.push(redirectTo)
       router.refresh()
     } catch (error: any) {
-      console.error("登录错误:", error)
+      console.error("[Login] ❌ 登录错误:", error)
       if (error.message?.includes("Invalid login credentials")) {
         toast.error("邮箱或密码错误，请重试")
       } else if (error.message?.includes("Email not confirmed")) {
@@ -61,6 +67,7 @@ function LoginPageContent() {
     setIsLoading(true)
 
     try {
+      console.log("[Login] 开始邮箱注册...")
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -73,6 +80,7 @@ function LoginPageContent() {
 
       // 检查是否需要邮箱验证
       if (data.user && data.user.identities && data.user.identities.length === 0) {
+        console.log("[Login] ⚠️ 邮箱已被注册")
         toast.error("该邮箱已被注册，请直接登录")
         setIsLoading(false)
         return
@@ -81,18 +89,25 @@ function LoginPageContent() {
       // 检查是否自动确认了邮箱
       if (data.session) {
         // 邮箱已自动确认，直接跳转
+        console.log("[Login] ✅ 注册成功，邮箱已自动确认，用户:", data.user?.id)
         toast.success("注册成功！正在跳转...")
+
+        // 等待一小段时间，让 AuthContext 更新状态
+        await new Promise(resolve => setTimeout(resolve, 500))
+
+        console.log("[Login] 跳转到:", redirectTo)
         router.push(redirectTo)
         router.refresh()
       } else {
         // 需要邮箱验证
+        console.log("[Login] ✅ 注册成功，需要邮箱验证")
         toast.success("注册成功！请检查您的邮箱（包括垃圾邮件文件夹）并点击验证链接", {
           duration: 8000,
         })
         toast.info("验证邮箱后即可登录使用", { duration: 8000 })
       }
     } catch (error: any) {
-      console.error("注册错误:", error)
+      console.error("[Login] ❌ 注册错误:", error)
       toast.error(error.message || "注册失败，请重试")
     } finally {
       setIsLoading(false)
