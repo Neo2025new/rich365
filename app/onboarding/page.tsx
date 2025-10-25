@@ -10,9 +10,11 @@ import { Progress } from "@/components/ui/progress"
 import { mbtiData, roleData, type MBTIType, type ProfessionalRole } from "@/lib/calendar-data"
 import { Check, ArrowLeft, ArrowRight, Sparkles, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { updateProfile } = useAuth()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedMBTI, setSelectedMBTI] = useState<MBTIType | null>(null)
   const [selectedRole, setSelectedRole] = useState<ProfessionalRole | null>(null)
@@ -66,22 +68,24 @@ export default function OnboardingPage() {
     }
   }
 
-  const handleComplete = () => {
-    if (selectedMBTI && selectedRole) {
-      try {
-        localStorage.setItem(
-          "userProfile",
-          JSON.stringify({
-            mbti: selectedMBTI,
-            role: selectedRole,
-            goal: goal || undefined,
-          })
-        )
-        router.push("/calendar")
-      } catch (error) {
-        console.error("Failed to save user profile:", error)
-        alert("保存失败，请检查浏览器设置是否允许存储数据")
-      }
+  const handleComplete = async () => {
+    if (!selectedMBTI || !selectedRole) return
+
+    const profileData = {
+      mbti: selectedMBTI,
+      role: selectedRole,
+      goal: goal || undefined,
+    }
+
+    try {
+      // 使用 AuthContext 的 updateProfile，会自动处理 Supabase 或 LocalStorage
+      await updateProfile(profileData)
+
+      // 跳转到日历页面
+      router.push("/calendar")
+    } catch (error) {
+      console.error("保存 profile 失败:", error)
+      alert("保存失败，请重试")
     }
   }
 

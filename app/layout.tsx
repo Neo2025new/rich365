@@ -2,7 +2,10 @@ import type React from "react"
 import type { Metadata } from "next"
 
 import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "sonner"
 import "./globals.css"
+import { AuthProvider } from "@/contexts/AuthContext"
+import { AppHeader } from "@/components/app-header"
 
 import { Geist_Mono, Signika_Negative as V0_Font_Signika_Negative, Geist_Mono as V0_Font_Geist_Mono } from 'next/font/google'
 
@@ -24,8 +27,12 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className={`font-sans antialiased`}>
-        {children}
-        <Analytics />
+        <AuthProvider>
+          <AppHeader />
+          {children}
+          <Toaster />
+          <Analytics />
+        </AuthProvider>
       </body>
     </html>
   )

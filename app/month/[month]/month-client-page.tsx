@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { getPersonalizedMonthTheme, getPersonalizedDailyActions, type UserProfile } from "@/lib/calendar-data"
+import { getPersonalizedMonthTheme, getPersonalizedDailyActions } from "@/lib/calendar-data"
 import { ArrowLeft, Calendar } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
 
 const cardColors = [
   "bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-950 dark:to-pink-900",
@@ -25,28 +26,21 @@ export default function MonthClientPage({
   params: { month: string }
 }) {
   const router = useRouter()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const { profile, loading } = useAuth()
   const month = Number.parseInt(params.month)
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("userProfile")
-      if (stored) {
-        setProfile(JSON.parse(stored))
-      } else {
-        router.push("/")
-      }
-    } catch (error) {
-      console.error("Failed to load user profile:", error)
-      router.push("/")
+    // 如果加载完成且没有 profile，跳转到 onboarding
+    if (!loading && !profile) {
+      router.push("/onboarding")
     }
-  }, [router])
+  }, [profile, loading, router])
 
   if (isNaN(month) || month < 1 || month > 12) {
     notFound()
   }
 
-  if (!profile) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -55,6 +49,10 @@ export default function MonthClientPage({
         </div>
       </div>
     )
+  }
+
+  if (!profile) {
+    return null
   }
 
   // Use current year dynamically

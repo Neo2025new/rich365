@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -8,21 +8,20 @@ import { ArrowLeft } from "lucide-react"
 import { Leaderboard } from "@/components/leaderboard"
 import { UserStatsCard } from "@/components/user-stats-card"
 import { WealthTree } from "@/components/wealth-tree"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function LeaderboardPage() {
   const router = useRouter()
-  const [hasProfile, setHasProfile] = useState(false)
+  const { profile, loading } = useAuth()
 
   useEffect(() => {
-    const stored = localStorage.getItem("userProfile")
-    if (stored) {
-      setHasProfile(true)
-    } else {
-      router.push("/")
+    // 如果加载完成且没有 profile，跳转到 onboarding
+    if (!loading && !profile) {
+      router.push("/onboarding")
     }
-  }, [router])
+  }, [profile, loading, router])
 
-  if (!hasProfile) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -31,6 +30,10 @@ export default function LeaderboardPage() {
         </div>
       </div>
     )
+  }
+
+  if (!profile) {
+    return null
   }
 
   return (

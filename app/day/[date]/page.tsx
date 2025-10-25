@@ -1,17 +1,18 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { getDailyAction, type UserProfile } from "@/lib/calendar-data"
+import { getDailyAction } from "@/lib/calendar-data"
 import { ArrowLeft, Sparkles } from "lucide-react"
 import { CheckInButton } from "@/components/check-in-button"
 import { UserStatsCard } from "@/components/user-stats-card"
 import { WealthTree } from "@/components/wealth-tree"
 import { ShareCardDialog } from "@/components/share-card-dialog"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default async function DayPage({
   params,
@@ -24,18 +25,16 @@ export default async function DayPage({
 
 function DayClientPageComponent({ date }: { date: string }) {
   const router = useRouter()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const { profile, loading } = useAuth()
 
   useEffect(() => {
-    const stored = localStorage.getItem("userProfile")
-    if (stored) {
-      setProfile(JSON.parse(stored))
-    } else {
-      router.push("/")
+    // 如果加载完成且没有 profile，跳转到 onboarding
+    if (!loading && !profile) {
+      router.push("/onboarding")
     }
-  }, [router])
+  }, [profile, loading, router])
 
-  if (!profile) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -44,6 +43,10 @@ function DayClientPageComponent({ date }: { date: string }) {
         </div>
       </div>
     )
+  }
+
+  if (!profile) {
+    return null
   }
 
   const action = getDailyAction(date, profile)
