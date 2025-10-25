@@ -42,6 +42,7 @@ export type MonthTheme = {
 export type UserProfile = {
   mbti: MBTIType
   role: ProfessionalRole
+  goal?: string // 用户的搞钱目标（选填）
 }
 
 // MBTI personality data with icons
