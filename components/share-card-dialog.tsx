@@ -97,10 +97,10 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
           >
             {/* Header */}
             <div className="space-y-2">
-              <div className="text-sm font-medium text-gray-600">
+              <div className="text-sm font-medium" style={{ color: "#6b7280" }}>
                 {formattedDate} · {dayOfWeek}
               </div>
-              <div className="inline-block px-3 py-1 bg-white/80 rounded-full text-xs font-medium text-gray-700">
+              <div className="inline-block px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: "rgba(255, 255, 255, 0.8)", color: "#374151" }}>
                 {theme}
               </div>
             </div>
@@ -108,7 +108,7 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
             {/* Main Content */}
             <div className="text-center space-y-4">
               <div className="text-7xl">{emoji}</div>
-              <div className="text-2xl font-bold text-gray-900 leading-tight px-4">{title}</div>
+              <div className="text-2xl font-bold leading-tight px-4" style={{ color: "#111827" }}>{title}</div>
             </div>
 
             {/* Footer */}
@@ -116,8 +116,8 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
               {/* Stats Badge */}
               {currentStreak > 0 && (
                 <div
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-full text-sm font-bold"
-                  style={{ background: "linear-gradient(90deg, #ec4899 0%, #f97316 100%)" }}
+                  className="flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-bold"
+                  style={{ background: "linear-gradient(90deg, #ec4899 0%, #f97316 100%)", color: "#ffffff" }}
                 >
                   <span>已打卡第 {currentStreak} 天</span>
                   <span>🔥</span>
@@ -126,8 +126,8 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
 
               {/* Branding */}
               <div className="text-center space-y-1">
-                <div className="text-lg font-bold text-gray-900">搞钱行动日历</div>
-                <div className="text-xs text-gray-600">每天行动一小步，财富增长一大步</div>
+                <div className="text-lg font-bold" style={{ color: "#111827" }}>搞钱行动日历</div>
+                <div className="text-xs" style={{ color: "#6b7280" }}>每天行动一小步，财富增长一大步</div>
               </div>
             </div>
           </div>

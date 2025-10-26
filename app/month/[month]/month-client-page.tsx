@@ -265,7 +265,7 @@ export default function MonthClientPage({
           >
             {/* 页眉 */}
             <div>
-              <div className="text-xs text-gray-500 mb-4">
+              <div className="text-xs mb-4" style={{ color: "#6b7280" }}>
                 {new Date(action.date).toLocaleDateString('zh-CN', {
                   year: 'numeric',
                   month: 'long',
@@ -273,7 +273,7 @@ export default function MonthClientPage({
                   weekday: 'long'
                 })}
               </div>
-              <div className="inline-block px-3 py-1 bg-gray-100 rounded-full text-xs font-medium mb-6">
+              <div className="inline-block px-3 py-1 rounded-full text-xs font-medium mb-6" style={{ backgroundColor: "#f3f4f6", color: "#000000" }}>
                 {action.theme}
               </div>
             </div>
@@ -281,16 +281,16 @@ export default function MonthClientPage({
             {/* 主要内容 */}
             <div className="flex-1 flex flex-col items-center justify-center text-center space-y-8">
               <div className="text-8xl">{action.emoji}</div>
-              <h1 className="text-4xl font-bold leading-tight">{action.title}</h1>
-              <p className="text-lg text-gray-600 leading-relaxed max-w-md">
+              <h1 className="text-4xl font-bold leading-tight" style={{ color: "#000000" }}>{action.title}</h1>
+              <p className="text-lg leading-relaxed max-w-md" style={{ color: "#4b5563" }}>
                 {action.description}
               </p>
             </div>
 
             {/* 页脚 */}
             <div className="text-center space-y-2">
-              <div className="text-sm font-bold">搞钱行动日历</div>
-              <div className="text-xs text-gray-500">每天行动一小步，财富增长一大步</div>
+              <div className="text-sm font-bold" style={{ color: "#000000" }}>搞钱行动日历</div>
+              <div className="text-xs" style={{ color: "#6b7280" }}>每天行动一小步，财富增长一大步</div>
             </div>
           </div>
         ))}
