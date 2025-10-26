@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     // ✅ 关键修复：确保 profile 存在
     console.log("[Progressive Calendar] 检查 profile 是否存在...")
     const { data: existingProfile, error: profileCheckError } = await supabase
-      .from("profiles")
+      .from("user_profiles")
       .select("id")
       .eq("id", userId)
       .single()
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
       // 创建 profile
       const { error: insertError } = await supabase
-        .from("profiles")
+        .from("user_profiles")
         .insert({
           id: userId,
           username: "用户" + userId.substring(0, 8),
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
       // 更新 profile
       const { error: updateError } = await supabase
-        .from("profiles")
+        .from("user_profiles")
         .update({
           mbti: profile.mbti,
           role: profile.role,

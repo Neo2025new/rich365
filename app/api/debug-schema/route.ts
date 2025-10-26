@@ -24,7 +24,7 @@ export async function GET() {
 
     // 测试 1: 尝试查询 profiles 表（检查基本连接）
     const { data: testData, error: testError } = await supabase
-      .from("profiles")
+      .from("user_profiles")
       .select("id")
       .limit(1)
 
@@ -32,7 +32,7 @@ export async function GET() {
 
     // 测试 2: 尝试查询包含新列的数据
     const { data: fullData, error: fullError } = await supabase
-      .from("profiles")
+      .from("user_profiles")
       .select("id, mbti, role, username, avatar")
       .limit(1)
 

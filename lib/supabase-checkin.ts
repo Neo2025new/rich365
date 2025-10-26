@@ -32,7 +32,7 @@ export async function getUserStats(userId: string): Promise<UserStats> {
 
   try {
     const { data, error } = await supabase
-      .from("profiles")
+      .from("user_profiles")
       .select("total_check_ins, current_streak, longest_streak, total_coins, badges")
       .eq("id", userId)
       .single()
@@ -166,7 +166,7 @@ async function checkNewBadges(userId: string, stats: UserStats): Promise<Badge[]
     if (achieved) {
       // 添加徽章到用户数据
       const { error } = await supabase
-        .from("profiles")
+        .from("user_profiles")
         .update({ badges: [...stats.badges, badge.id] })
         .eq("id", userId)
 

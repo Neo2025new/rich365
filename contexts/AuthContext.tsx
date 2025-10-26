@@ -52,9 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadProfile = async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from("profiles")
+        .from("user_profiles")
         .select("*")
-        .eq("id", userId)
+        .eq("user_id", userId)
         .single()
 
       if (error) {
@@ -110,9 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newProfile.avatar !== undefined) updateData.avatar = newProfile.avatar
 
       const { error } = await supabase
-        .from("profiles")
+        .from("user_profiles")
         .update(updateData)
-        .eq("id", user.id)
+        .eq("user_id", user.id)
 
       if (error) {
         console.error("[AuthContext] 更新 profile 失败:", error)
