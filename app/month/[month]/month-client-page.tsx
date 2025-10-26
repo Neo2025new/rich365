@@ -7,7 +7,7 @@ import { notFound } from "next/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { getMonthTheme, getMonthActions } from "@/lib/calendar-hybrid"
-import { ArrowLeft, Calendar, Download, Printer } from "lucide-react"
+import { ArrowLeft, Calendar, Download, Printer, CalendarPlus } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import type { DailyAction, MonthTheme } from "@/lib/calendar-data"
 import html2canvas from "html2canvas"
@@ -117,6 +117,45 @@ export default function MonthClientPage({
     window.print()
   }
 
+  // 下载日历文件
+  const handleDownloadCalendar = async () => {
+    if (!user) {
+      toast.error("请先登录")
+      return
+    }
+
+    try {
+      console.log("[Month Page] 下载日历文件...")
+      const currentYear = new Date().getFullYear()
+      const url = `/api/export-calendar?userId=${user.id}&year=${currentYear}&month=${month}`
+
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "下载失败")
+      }
+
+      const blob = await response.blob()
+      const downloadUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement("a")
+      link.href = downloadUrl
+
+      const monthName = new Date(currentYear, month - 1).toLocaleDateString("zh-CN", { month: "long" })
+      link.download = `搞钱行动日历-${currentYear}年${monthName}.ics`
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(downloadUrl)
+
+      toast.success("日历文件已下载，可导入到手机日历！")
+    } catch (error) {
+      console.error("[Month Page] 下载日历失败:", error)
+      toast.error(error instanceof Error ? error.message : "下载失败，请重试")
+    }
+  }
+
   if (isNaN(month) || month < 1 || month > 12) {
     notFound()
   }
@@ -166,6 +205,10 @@ export default function MonthClientPage({
               </Button>
             </Link>
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleDownloadCalendar}>
+                <CalendarPlus className="mr-2 h-4 w-4" />
+                下载日历
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSaveImage} disabled={isSaving}>
                 <Download className="mr-2 h-4 w-4" />
                 {isSaving ? "生成中..." : "保存图片"}
