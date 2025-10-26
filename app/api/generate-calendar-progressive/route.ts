@@ -20,6 +20,58 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
+    // ✅ 关键修复：确保 profile 存在
+    console.log("[Progressive Calendar] 检查 profile 是否存在...")
+    const { data: existingProfile, error: profileCheckError } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", userId)
+      .single()
+
+    if (profileCheckError || !existingProfile) {
+      console.log("[Progressive Calendar] Profile 不存在，创建新 profile...")
+
+      // 创建 profile
+      const { error: insertError } = await supabase
+        .from("profiles")
+        .insert({
+          id: userId,
+          username: "用户" + userId.substring(0, 8),
+          avatar: "😊",
+          mbti: profile.mbti,
+          role: profile.role,
+          goal: profile.goal || null,
+        })
+
+      if (insertError) {
+        console.error("[Progressive Calendar] 创建 profile 失败:", insertError)
+        return NextResponse.json(
+          { success: false, error: `创建用户档案失败: ${insertError.message}` },
+          { status: 500 }
+        )
+      }
+
+      console.log("[Progressive Calendar] ✅ Profile 创建成功")
+    } else {
+      console.log("[Progressive Calendar] ✅ Profile 已存在，更新信息...")
+
+      // 更新 profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          mbti: profile.mbti,
+          role: profile.role,
+          goal: profile.goal || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId)
+
+      if (updateError) {
+        console.error("[Progressive Calendar] 更新 profile 失败:", updateError)
+        // 不中断流程，继续生成日历
+      }
+    }
+
     // Phase 1: 生成从今天开始的 30 天 (快速)
     if (phase === "initial" || !phase) {
       const today = new Date()
