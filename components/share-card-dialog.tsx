@@ -89,8 +89,11 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
           {/* Preview Card */}
           <div
             ref={cardRef}
-            className="aspect-[9/16] bg-gradient-to-br from-pink-50 via-yellow-50 to-orange-50 p-8 rounded-2xl flex flex-col justify-between"
-            style={{ width: "360px" }}
+            className="aspect-[9/16] p-8 rounded-2xl flex flex-col justify-between"
+            style={{
+              width: "360px",
+              background: "linear-gradient(135deg, #fce7f3 0%, #fef3c7 50%, #fed7aa 100%)"
+            }}
           >
             {/* Header */}
             <div className="space-y-2">
