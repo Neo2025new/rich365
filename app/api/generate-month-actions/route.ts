@@ -56,6 +56,14 @@ export async function POST(request: Request) {
     const mbtiInfo = mbtiData[profile.mbti]
     const roleInfo = roleData[profile.role]
 
+    // 防御性检查
+    if (!mbtiInfo) {
+      return NextResponse.json({ success: false, error: `无效的 MBTI 类型: ${profile.mbti}` }, { status: 400 })
+    }
+    if (!roleInfo) {
+      return NextResponse.json({ success: false, error: `无效的职业类型: ${profile.role}` }, { status: 400 })
+    }
+
     const prompt = `你是一个专业的财富增长顾问。
 
 用户信息：
