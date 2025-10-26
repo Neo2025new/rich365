@@ -107,6 +107,7 @@ ${profile.goal ? `- 个人目标：${profile.goal}` : ""}
     const text = result.response.text()
 
     console.log("[Yearly Plan] AI 响应长度:", text.length)
+    console.log("[Yearly Plan] AI 原始响应:", text.substring(0, 500)) // 打印前 500 字符
 
     // 解析 JSON
     const themes = parseYearlyPlan(text)
@@ -183,6 +184,9 @@ function parseYearlyPlan(
   try {
     let cleanedText = text.trim()
 
+    console.log("[Yearly Plan] 原始文本长度:", text.length)
+    console.log("[Yearly Plan] 原始文本前 200 字符:", text.substring(0, 200))
+
     // 移除 markdown 代码块标记
     cleanedText = cleanedText.replace(/```json\n?/gi, "")
     cleanedText = cleanedText.replace(/```javascript\n?/gi, "")
@@ -192,17 +196,24 @@ function parseYearlyPlan(
     const startIndex = cleanedText.indexOf("[")
     const endIndex = cleanedText.lastIndexOf("]")
 
+    console.log("[Yearly Plan] JSON 起始位置:", startIndex, "结束位置:", endIndex)
+
     if (startIndex === -1 || endIndex === -1) {
+      console.error("[Yearly Plan] 未找到 JSON 数组。完整文本:", cleanedText)
       throw new Error("响应中未找到 JSON 数组")
     }
 
     cleanedText = cleanedText.substring(startIndex, endIndex + 1).trim()
+
+    console.log("[Yearly Plan] 提取的 JSON 前 300 字符:", cleanedText.substring(0, 300))
 
     const themes = JSON.parse(cleanedText)
 
     if (!Array.isArray(themes)) {
       throw new Error("响应不是数组格式")
     }
+
+    console.log("[Yearly Plan] 解析成功，共", themes.length, "项")
 
     // 验证
     const validThemes = themes.filter(
@@ -213,9 +224,20 @@ function parseYearlyPlan(
         theme.emoji
     )
 
+    console.log("[Yearly Plan] 有效主题数:", validThemes.length)
+
+    if (validThemes.length !== themes.length) {
+      console.warn("[Yearly Plan] 部分主题数据不完整:", {
+        total: themes.length,
+        valid: validThemes.length,
+        invalid: themes.filter(t => !t.relativeMonth || !t.theme || !t.description || !t.emoji)
+      })
+    }
+
     return validThemes
   } catch (error) {
     console.error("[Yearly Plan] JSON 解析错误:", error)
+    console.error("[Yearly Plan] 解析失败的文本:", text)
     throw new Error(`JSON 解析失败: ${error instanceof Error ? error.message : "未知错误"}`)
   }
 }
