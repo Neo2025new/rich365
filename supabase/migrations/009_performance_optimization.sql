@@ -15,10 +15,8 @@ CREATE INDEX IF NOT EXISTS idx_daily_actions_user_date_composite
 CREATE INDEX IF NOT EXISTS idx_check_ins_user_date_composite
   ON check_ins(user_id, date DESC);
 
--- 添加部分索引（只索引未来的日期，减少索引大小）
-CREATE INDEX IF NOT EXISTS idx_daily_actions_future
-  ON daily_actions(user_id, date)
-  WHERE date >= CURRENT_DATE;
+-- 注意：部分索引不能使用 CURRENT_DATE（不是 IMMUTABLE 函数）
+-- 已移除 idx_daily_actions_future，使用完整索引即可
 
 -- 优化按类别查询
 CREATE INDEX IF NOT EXISTS idx_daily_actions_category
@@ -44,7 +42,6 @@ ANALYZE check_ins;
 
 COMMENT ON INDEX idx_daily_actions_user_date_composite IS '优化按用户ID和日期查询（日历加载的主要查询）';
 COMMENT ON INDEX idx_check_ins_user_date_composite IS '优化按用户ID和日期查询打卡记录';
-COMMENT ON INDEX idx_daily_actions_future IS '部分索引：只索引未来日期，优化日历视图加载';
 COMMENT ON INDEX idx_daily_actions_category IS '优化按类别筛选行动';
 COMMENT ON INDEX idx_daily_actions_theme IS '优化按主题筛选行动';
 
