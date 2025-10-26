@@ -137,36 +137,30 @@ export default function CalendarPage() {
         setTimeout(() => reject(new Error("加载超时，请刷新页面重试")), 10000)
       })
 
-      // 加载所有 12 个月的主题
+      // 加载所有 12 个月的主题（总是返回 12 个月）
       const loadPromise = (async () => {
         console.log(`[Calendar Page] 加载所有月度主题...`)
         const allThemes = await getAllMonthlyThemes(user?.id || null)
 
-        // 如果有数据库中的主题，使用它们
-        if (allThemes && allThemes.length > 0) {
-          console.log(`[Calendar Page] 从数据库加载到 ${allThemes.length} 个月主题`)
-          allThemes.forEach((theme) => {
-            themes[theme.relative_month] = {
-              month: theme.relative_month,
-              name: `第${theme.relative_month}个月`,
-              theme: theme.theme,
-              description: theme.description,
-              emoji: theme.emoji,
-              dateRange: {
-                start: theme.start_date,
-                end: theme.end_date,
-              },
-              isGenerated: theme.is_generated,
-            }
-          })
-        } else {
-          // 如果没有数据，只加载第一个月
-          console.log(`[Calendar Page] 数据库无数据，只加载第一个月`)
-          const theme = await getRelativeMonthTheme(user?.id || null, 1, profile)
-          themes[1] = theme
-        }
+        console.log(`[Calendar Page] 加载到 ${allThemes.length} 个月主题`)
 
-        console.log(`[Calendar Page] 月度主题加载完成`)
+        // 将数据转换为 Record 格式
+        allThemes.forEach((theme) => {
+          themes[theme.relative_month] = {
+            month: theme.relative_month,
+            name: `第${theme.relative_month}个月`,
+            theme: theme.theme,
+            description: theme.description,
+            emoji: theme.emoji,
+            dateRange: {
+              start: theme.start_date,
+              end: theme.end_date,
+            },
+            isGenerated: theme.is_generated || false,
+          }
+        })
+
+        console.log(`[Calendar Page] 月度主题加载完成，共 ${Object.keys(themes).length} 个月`)
         return themes
       })()
 

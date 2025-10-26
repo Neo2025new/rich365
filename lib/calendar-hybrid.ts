@@ -14,10 +14,41 @@ import {
 
 /**
  * 获取用户的所有月度主题（从 monthly_themes 表）
+ * 如果数据库没有数据，返回 12 个月的占位主题
  */
 export async function getAllMonthlyThemes(userId: string | null) {
+  // 生成 12 个月的占位主题
+  const generatePlaceholderThemes = () => {
+    const today = new Date()
+    const placeholderThemes = []
+
+    for (let month = 1; month <= 12; month++) {
+      const startOffset = (month - 1) * 30
+      const endOffset = startOffset + 29
+
+      const startDate = new Date(today)
+      startDate.setDate(today.getDate() + startOffset)
+
+      const endDate = new Date(today)
+      endDate.setDate(today.getDate() + endOffset)
+
+      placeholderThemes.push({
+        relative_month: month,
+        theme: month === 1 ? "搞钱觉醒月" : "待解锁",
+        description: month === 1 ? "从今天开始，每天一个小行动，积累财富大能量" : "完成前面的月份后解锁",
+        emoji: month === 1 ? "💰" : "🔒",
+        is_generated: false,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+      })
+    }
+
+    return placeholderThemes
+  }
+
+  // 如果没有登录，返回占位主题
   if (!userId) {
-    return []
+    return generatePlaceholderThemes()
   }
 
   try {
@@ -33,13 +64,19 @@ export async function getAllMonthlyThemes(userId: string | null) {
 
     if (error) {
       console.error("[Calendar Hybrid] 查询月度主题失败:", error)
-      return []
+      return generatePlaceholderThemes()
     }
 
-    return data || []
+    // 如果数据库有数据，使用数据库数据
+    if (data && data.length > 0) {
+      return data
+    }
+
+    // 如果数据库没有数据，返回占位主题
+    return generatePlaceholderThemes()
   } catch (error) {
     console.error("[Calendar Hybrid] 获取月度主题失败:", error)
-    return []
+    return generatePlaceholderThemes()
   }
 }
 
