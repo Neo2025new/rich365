@@ -149,7 +149,8 @@ export async function updateUserDisplayInfo(
   const supabase = createClient()
 
   try {
-    const { error } = await supabase.from("user_profiles").update({ username, avatar }).eq("id", userId)
+    // UPDATE 需要 WHERE 条件来定位记录
+    const { error } = await supabase.from("user_profiles").update({ username, avatar }).eq("user_id", userId)
 
     if (error) {
       console.error("[Leaderboard] 更新用户显示信息失败:", error)

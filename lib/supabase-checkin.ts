@@ -31,10 +31,11 @@ export async function getUserStats(userId: string): Promise<UserStats> {
   const supabase = createClient()
 
   try {
+    // RLS 策略会自动根据 auth.uid() = user_id 过滤，SELECT 不需要手动 .eq()
     const { data, error } = await supabase
       .from("user_profiles")
       .select("total_check_ins, current_streak, longest_streak, total_coins, badges")
-      .eq("id", userId)
+      .eq("user_id", userId)
       .single()
 
     if (error) {
@@ -165,10 +166,11 @@ async function checkNewBadges(userId: string, stats: UserStats): Promise<Badge[]
 
     if (achieved) {
       // 添加徽章到用户数据
+      // UPDATE 需要 WHERE 条件来定位记录
       const { error } = await supabase
         .from("user_profiles")
         .update({ badges: [...stats.badges, badge.id] })
-        .eq("id", userId)
+        .eq("user_id", userId)
 
       if (!error) {
         newBadges.push(badge)
