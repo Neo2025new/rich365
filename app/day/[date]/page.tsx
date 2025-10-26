@@ -87,10 +87,10 @@ function DayClientPageComponent({ date }: { date: string }) {
       {/* Header */}
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
-          <Link href={`/month/${month}`}>
+          <Link href={`/month/1`}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              返回月历
+              返回日历
             </Button>
           </Link>
         </div>
@@ -136,14 +136,14 @@ function DayClientPageComponent({ date }: { date: string }) {
 
             {/* Navigation */}
             <div className="flex justify-between mt-8 pt-8 border-t">
-              <Link href={`/month/${month}`}>
+              <Link href={`/month/1`}>
                 <Button variant="ghost">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  查看本月所有行动
+                  查看所有行动
                 </Button>
               </Link>
               <Link href="/calendar">
-                <Button variant="ghost">返回日历</Button>
+                <Button variant="ghost">返回首页</Button>
               </Link>
             </div>
           </div>
