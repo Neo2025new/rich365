@@ -153,70 +153,43 @@ export default function OnboardingPage() {
         console.log("[Onboarding] ✅ 年度规划生成完成")
         setGenerationProgress(40)
 
-        // Phase 2.2: 生成第一个月详细行动
+        // Phase 2.2: 使用模拟数据生成第一个月
         setCurrentAction("正在为你定制第一个月的搞钱行动...")
 
-        console.log("[Onboarding] 步骤 2: 生成第一个月详细行动...")
-        const response = await fetch("/api/generate-calendar-progressive", {
+        console.log("[Onboarding] 步骤 2: 使用模拟数据生成第一个月...")
+        const response = await fetch("/api/generate-mock-first-month", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             userId: user.id,
-            profile: profileData,
-            phase: "initial", // 先生成第一个月
           }),
         })
 
         const result = await response.json()
 
         if (result.success) {
-          console.log("[Onboarding] ✅ 第一个月行动生成完成，等待数据可用...")
-          setGenerationProgress(65)
+          console.log("[Onboarding] ✅ 第一个月模拟数据生成完成，共", result.count, "个行动")
+          setGenerationProgress(80)
 
-          // Phase 3: 验证数据
+          // Phase 3: 完成
           setGenerationPhase("saving")
-          setGenerationProgress(70)
-          setCurrentAction("验证数据完整性...")
+          setGenerationProgress(90)
+          setCurrentAction("保存数据...")
 
-          // 等待数据真正写入数据库并可查询
-          let retries = 0
-          const maxRetries = 10
-          let dataReady = false
-
-          while (retries < maxRetries && !dataReady) {
-            await new Promise(resolve => setTimeout(resolve, 500))
-
-            // 检查数据是否可用
-            const checkResponse = await fetch(`/api/check-calendar-data?userId=${user.id}`)
-            const checkResult = await checkResponse.json()
-
-            if (checkResult.hasData && checkResult.count >= 30) {
-              dataReady = true
-              console.log("[Onboarding] ✅ 数据已就绪，共", checkResult.count, "条")
-            } else {
-              retries++
-              console.log(`[Onboarding] 等待数据就绪... (${retries}/${maxRetries})`)
-            }
-          }
-
-          if (!dataReady) {
-            console.warn("[Onboarding] ⚠️ 数据验证超时，继续跳转")
-          }
+          await new Promise(resolve => setTimeout(resolve, 500))
 
           setGenerationProgress(100)
-
-          // Phase 4: 完成
           setGenerationPhase("complete")
           console.log("[Onboarding] ✅ 日历生成完成")
 
-          toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
+          toast.success(`成功生成 ${result.count} 个搞钱行动！`)
 
-          // 等待 1.5 秒显示完成状态
-          await new Promise(resolve => setTimeout(resolve, 1500))
+          // 等待 1 秒显示完成状态
+          await new Promise(resolve => setTimeout(resolve, 1000))
         } else {
-          console.error("[Onboarding] ⚠️ AI 日历生成失败:", result.error)
+          console.error("[Onboarding] ⚠️ 模拟数据生成失败:", result.error)
           toast.error(result.error || "日历生成失败，请重试")
           setIsGeneratingCalendar(false)
           return
