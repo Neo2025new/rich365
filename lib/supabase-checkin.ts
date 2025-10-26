@@ -77,10 +77,16 @@ export async function hasCheckedInToday(userId: string, date: string): Promise<b
       .select("id")
       .eq("user_id", userId)
       .eq("date", date)
-      .single()
+      .limit(1)
 
-    return !error && !!data
+    if (error) {
+      console.error("[Checkin] 检查打卡状态失败:", error)
+      return false
+    }
+
+    return (data?.length || 0) > 0
   } catch (error) {
+    console.error("[Checkin] 检查打卡状态异常:", error)
     return false
   }
 }

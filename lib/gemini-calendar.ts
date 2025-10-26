@@ -362,16 +362,16 @@ export async function getDailyAction(userId: string, date: string) {
     .select("*")
     .eq("user_id", userId)
     .eq("date", date)
-    .single()
+    .limit(1)
 
   if (error) {
-    if (error.code === "PGRST116") {
-      // 未找到
-      return null
-    }
     console.error("[AI Calendar] 获取单日行动失败:", error)
     throw new Error(`获取行动失败: ${error.message}`)
   }
 
-  return data
+  if (!data || data.length === 0) {
+    return null
+  }
+
+  return data[0]
 }
