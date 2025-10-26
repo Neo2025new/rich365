@@ -9,15 +9,18 @@ import { mbtiData, roleData } from "@/lib/calendar-data"
 import { getAllMonthlyThemes, getRelativeMonthTheme } from "@/lib/calendar-hybrid"
 import { ArrowRight, User, Trophy, Sparkles, Printer } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CalendarPage() {
   const router = useRouter()
   const { user, profile, loading, error: authError, retryLoad } = useAuth()
+  const { toast } = useToast()
   const [monthThemes, setMonthThemes] = useState<Record<number, any>>({})
   const [isLoadingThemes, setIsLoadingThemes] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const redirectAttempted = useRef(false)
   const [waitingForProfile, setWaitingForProfile] = useState(false)
+  const [unlockingMonth, setUnlockingMonth] = useState<number | null>(null)
 
   useEffect(() => {
     // 检查是否刚从 onboarding 完成
@@ -234,10 +237,62 @@ export default function CalendarPage() {
     .sort((a, b) => a - b)
   const firstMonthTheme = monthThemes[1]
 
-  const handleMonthClick = (relativeMonth: number, isGenerated: boolean) => {
-    if (!isGenerated) {
-      // TODO: 触发生成该月份的详细行动
-      alert(`第${relativeMonth}个月暂未解锁，点击后将为你生成该月的详细行动计划`)
+  const handleMonthClick = async (relativeMonth: number, isGenerated: boolean) => {
+    if (isGenerated) return
+
+    // 确认解锁
+    const confirmed = window.confirm(`确定要解锁第${relativeMonth}个月吗？\n\nAI 将为你生成该月的 30 天详细行动计划，这可能需要 10-30 秒。`)
+    if (!confirmed) return
+
+    setUnlockingMonth(relativeMonth)
+
+    toast({
+      title: "🚀 开始生成...",
+      description: `正在为第${relativeMonth}个月生成 30 天行动计划，请稍候...`,
+    })
+
+    try {
+      const response = await fetch("/api/generate-month-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user?.id,
+          relativeMonth,
+          profile,
+        }),
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "✅ 解锁成功！",
+          description: `第${relativeMonth}个月的行动计划已生成，共 ${result.count} 天`,
+        })
+
+        // 刷新月度主题数据
+        await loadMonthThemes()
+
+        // 延迟后跳转到该月份
+        setTimeout(() => {
+          router.push(`/month/${relativeMonth}`)
+        }, 1500)
+      } else {
+        toast({
+          title: "❌ 生成失败",
+          description: result.error || "未知错误",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("[Calendar Page] 解锁月份失败:", error)
+      toast({
+        title: "❌ 生成失败",
+        description: error instanceof Error ? error.message : "网络错误，请重试",
+        variant: "destructive",
+      })
+    } finally {
+      setUnlockingMonth(null)
     }
   }
 
@@ -330,30 +385,42 @@ export default function CalendarPage() {
               )
             } else {
               // 未生成的月份：待解锁状态
+              const isUnlocking = unlockingMonth === relativeMonth
+
               return (
                 <div
                   key={relativeMonth}
-                  onClick={() => handleMonthClick(relativeMonth, false)}
+                  onClick={() => !isUnlocking && handleMonthClick(relativeMonth, false)}
                 >
-                  <Card className="p-6 cursor-pointer group relative border-2 border-dashed border-muted-foreground/30 hover:border-accent/50 transition-all duration-300 bg-muted/20">
-                    <div className="absolute -top-3 right-4 px-3 py-1 bg-muted text-muted-foreground text-xs font-bold rounded-full border">
-                      待解锁 🔒
+                  <Card className={`p-6 group relative border-2 border-dashed transition-all duration-300 ${
+                    isUnlocking
+                      ? "border-accent bg-accent/10 cursor-wait"
+                      : "border-muted-foreground/30 hover:border-accent/50 cursor-pointer bg-muted/20"
+                  }`}>
+                    <div className={`absolute -top-3 right-4 px-3 py-1 text-xs font-bold rounded-full border ${
+                      isUnlocking
+                        ? "bg-accent text-accent-foreground animate-pulse"
+                        : "bg-muted text-muted-foreground"
+                    }`}>
+                      {isUnlocking ? "生成中... ⏳" : "待解锁 🔒"}
                     </div>
-                    <div className="flex items-start justify-between mb-4 opacity-70">
+                    <div className={`flex items-start justify-between mb-4 ${isUnlocking ? "opacity-50" : "opacity-70"}`}>
                       <div className="text-4xl">{theme?.emoji || "📅"}</div>
                       <div className="text-sm font-medium text-muted-foreground">{theme?.name || `第${relativeMonth}个月`}</div>
                     </div>
-                    <h3 className="text-xl font-bold mb-2 opacity-70">
+                    <h3 className={`text-xl font-bold mb-2 ${isUnlocking ? "opacity-50" : "opacity-70"}`}>
                       {theme?.theme || "未解锁"}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4 opacity-70">
+                    <p className={`text-sm text-muted-foreground mb-4 ${isUnlocking ? "opacity-50" : "opacity-70"}`}>
                       {theme?.dateRange
                         ? `${theme.dateRange.start.slice(5)} ~ ${theme.dateRange.end.slice(5)}`
                         : theme?.description || "完成当前月份后解锁"}
                     </p>
-                    <div className="flex items-center text-sm font-medium text-muted-foreground">
-                      点击解锁
-                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    <div className={`flex items-center text-sm font-medium ${
+                      isUnlocking ? "text-accent" : "text-muted-foreground"
+                    }`}>
+                      {isUnlocking ? "正在生成..." : "点击解锁"}
+                      <ArrowRight className={`ml-2 h-4 w-4 ${!isUnlocking && "group-hover:translate-x-1"} transition-transform`} />
                     </div>
                   </Card>
                 </div>
