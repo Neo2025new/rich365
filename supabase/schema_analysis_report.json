@@ -1,0 +1,225 @@
+{
+  "timestamp": "2025-10-26T08:09:26.624Z",
+  "tables": [
+    {
+      "name": "daily_actions",
+      "usage_count": 15,
+      "files": [
+        "/app/api/check-calendar-data/route.ts",
+        "/app/api/check-tables/route.ts",
+        "/app/api/debug-dates/route.ts",
+        "/app/api/export-calendar/route.ts",
+        "/app/api/generate-calendar-progressive/route.ts",
+        "/app/api/generate-month-actions/route.ts",
+        "/app/print/page.tsx",
+        "/lib/calendar-hybrid.ts",
+        "/lib/gemini-calendar.ts"
+      ]
+    },
+    {
+      "name": "user_profiles",
+      "usage_count": 15,
+      "files": [
+        "/app/api/debug-schema/route.ts",
+        "/app/api/generate-calendar-progressive/route.ts",
+        "/lib/supabase-checkin.ts",
+        "/lib/supabase-leaderboard.ts",
+        "/contexts/AuthContext.tsx"
+      ]
+    },
+    {
+      "name": "monthly_themes",
+      "usage_count": 7,
+      "files": [
+        "/app/api/check-tables/route.ts",
+        "/app/api/generate-month-actions/route.ts",
+        "/app/api/generate-yearly-plan/route.ts",
+        "/lib/calendar-hybrid.ts"
+      ]
+    },
+    {
+      "name": "check_ins",
+      "usage_count": 3,
+      "files": [
+        "/lib/supabase-checkin.ts"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "name": "id",
+      "usage_count": 7,
+      "files": [
+        "/app/api/debug-schema/route.ts",
+        "/app/api/generate-calendar-progressive/route.ts",
+        "/app/api/generate-yearly-plan/route.ts",
+        "/lib/supabase-checkin.ts",
+        "/lib/supabase-leaderboard.ts"
+      ]
+    },
+    {
+      "name": "user",
+      "usage_count": 5,
+      "files": [
+        "/app/login/page.tsx"
+      ]
+    },
+    {
+      "name": "username",
+      "usage_count": 4,
+      "files": [
+        "/app/api/debug-schema/route.ts",
+        "/lib/supabase-leaderboard.ts",
+        "/contexts/AuthContext.tsx"
+      ]
+    },
+    {
+      "name": "avatar",
+      "usage_count": 4,
+      "files": [
+        "/app/api/debug-schema/route.ts",
+        "/lib/supabase-leaderboard.ts",
+        "/contexts/AuthContext.tsx"
+      ]
+    },
+    {
+      "name": "total_check_ins",
+      "usage_count": 4,
+      "files": [
+        "/lib/supabase-checkin.ts",
+        "/lib/supabase-leaderboard.ts"
+      ]
+    },
+    {
+      "name": "current_streak",
+      "usage_count": 4,
+      "files": [
+        "/lib/supabase-checkin.ts",
+        "/lib/supabase-leaderboard.ts"
+      ]
+    },
+    {
+      "name": "total_coins",
+      "usage_count": 4,
+      "files": [
+        "/lib/supabase-checkin.ts",
+        "/lib/supabase-leaderboard.ts"
+      ]
+    },
+    {
+      "name": "date",
+      "usage_count": 3,
+      "files": [
+        "/app/api/debug-dates/route.ts"
+      ]
+    },
+    {
+      "name": "count",
+      "usage_count": 2,
+      "files": [
+        "/app/api/check-tables/route.ts"
+      ]
+    },
+    {
+      "name": "title",
+      "usage_count": 2,
+      "files": [
+        "/app/api/debug-dates/route.ts"
+      ]
+    },
+    {
+      "name": "theme",
+      "usage_count": 2,
+      "files": [
+        "/app/api/debug-dates/route.ts"
+      ]
+    },
+    {
+      "name": "mbti",
+      "usage_count": 2,
+      "files": [
+        "/app/api/debug-schema/route.ts",
+        "/contexts/AuthContext.tsx"
+      ]
+    },
+    {
+      "name": "role",
+      "usage_count": 2,
+      "files": [
+        "/app/api/debug-schema/route.ts",
+        "/contexts/AuthContext.tsx"
+      ]
+    },
+    {
+      "name": "emoji",
+      "usage_count": 2,
+      "files": [
+        "/app/onboarding/page.tsx"
+      ]
+    },
+    {
+      "name": "length",
+      "usage_count": 2,
+      "files": [
+        "/lib/calendar-hybrid.ts",
+        "/lib/gemini-calendar.ts"
+      ]
+    },
+    {
+      "name": "longest_streak",
+      "usage_count": 2,
+      "files": [
+        "/lib/supabase-checkin.ts"
+      ]
+    },
+    {
+      "name": "badges",
+      "usage_count": 2,
+      "files": [
+        "/lib/supabase-checkin.ts"
+      ]
+    },
+    {
+      "name": "session",
+      "usage_count": 1,
+      "files": [
+        "/app/login/page.tsx"
+      ]
+    },
+    {
+      "name": "actions",
+      "usage_count": 1,
+      "files": [
+        "/app/onboarding/page.tsx"
+      ]
+    },
+    {
+      "name": "name",
+      "usage_count": 1,
+      "files": [
+        "/app/onboarding/page.tsx"
+      ]
+    },
+    {
+      "name": "description",
+      "usage_count": 1,
+      "files": [
+        "/app/onboarding/page.tsx"
+      ]
+    },
+    {
+      "name": "traits",
+      "usage_count": 1,
+      "files": [
+        "/app/onboarding/page.tsx"
+      ]
+    },
+    {
+      "name": "goal",
+      "usage_count": 1,
+      "files": [
+        "/contexts/AuthContext.tsx"
+      ]
+    }
+  ]
+}
