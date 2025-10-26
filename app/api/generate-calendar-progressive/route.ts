@@ -133,7 +133,15 @@ ${profile.goal ? `- 个人目标：${profile.goal}` : ""}
 - 确保 JSON 格式正确，可以直接解析`
 
       console.log("[Progressive Calendar] 调用 Gemini AI 生成第一个月...")
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.5-flash",
+        generationConfig: {
+          temperature: 0.9,
+          topP: 0.95,
+          topK: 40,
+          maxOutputTokens: 4096,
+        }
+      })
       const result = await model.generateContent(prompt)
       const text = result.response.text()
 

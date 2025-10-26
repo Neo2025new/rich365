@@ -12,7 +12,15 @@ export const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
  */
 export async function generateGoalBasedActions(goal: string, mbti: string, role: string): Promise<string> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        temperature: 0.9,
+        topP: 0.95,
+        topK: 40,
+        maxOutputTokens: 2048,
+      }
+    })
 
     const prompt = `你是一个专业的财富增长顾问，擅长制定可执行的微行动计划。
 
@@ -55,7 +63,15 @@ export async function generateGoalBasedActions(goal: string, mbti: string, role:
  */
 export async function validateGoal(goal: string): Promise<{ valid: boolean; suggestion?: string }> {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        temperature: 0.3,
+        topP: 0.8,
+        topK: 20,
+        maxOutputTokens: 256,
+      }
+    })
 
     const prompt = `判断以下目标是否是一个合理的、与财富增长相关的目标：
 

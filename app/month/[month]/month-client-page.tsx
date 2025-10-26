@@ -13,15 +13,19 @@ import type { DailyAction, MonthTheme } from "@/lib/calendar-data"
 import html2canvas from "html2canvas"
 import { toast } from "sonner"
 
-const cardColors = [
-  "bg-gradient-to-br from-pink-100 to-pink-200 dark:from-pink-950 dark:to-pink-900",
-  "bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-950 dark:to-yellow-900",
-  "bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-950 dark:to-blue-900",
-  "bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-950 dark:to-purple-900",
-  "bg-gradient-to-br from-green-100 to-green-200 dark:from-green-950 dark:to-green-900",
-  "bg-gradient-to-br from-orange-100 to-orange-200 dark:from-orange-950 dark:to-orange-900",
-  "bg-gradient-to-br from-teal-100 to-teal-200 dark:from-teal-950 dark:to-teal-900",
-]
+// 使用 RGB 渐变替代 Tailwind 类，避免 html2canvas 的 lab() 颜色问题
+const getCardStyle = (day: number) => {
+  const gradients = [
+    "linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%)", // pink
+    "linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)", // yellow
+    "linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)", // blue
+    "linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%)", // purple
+    "linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)", // green
+    "linear-gradient(135deg, #fed7aa 0%, #fdba74 100%)", // orange
+    "linear-gradient(135deg, #ccfbf1 0%, #99f6e4 100%)", // teal
+  ]
+  return { background: gradients[day % gradients.length] }
+}
 
 export default function MonthClientPage({
   params,
@@ -203,7 +207,6 @@ export default function MonthClientPage({
 
             const dateStr = `${currentYear}-${month.toString().padStart(2, "0")}-${day.toString().padStart(2, "0")}`
             const action = actions.find((a) => a.date === dateStr)
-            const colorClass = action ? cardColors[day % cardColors.length] : ""
 
             return (
               <Link
@@ -212,7 +215,8 @@ export default function MonthClientPage({
                 className={action ? "cursor-pointer" : "cursor-default"}
               >
                 <Card
-                  className={`aspect-square p-2 md:p-4 flex flex-col justify-between transition-all duration-300 ${colorClass} ${
+                  style={action ? getCardStyle(day) : undefined}
+                  className={`aspect-square p-2 md:p-4 flex flex-col justify-between transition-all duration-300 ${
                     action ? "hover:shadow-lg hover:scale-[1.05] hover:border-primary border-2" : "opacity-50 bg-muted"
                   }`}
                 >

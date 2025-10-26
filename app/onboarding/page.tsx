@@ -145,16 +145,38 @@ export default function OnboardingPage() {
         const result = await response.json()
 
         if (result.success) {
-          console.log("[Onboarding] ✅ 第一个月生成成功，行动数:", result.actionsCount)
+          console.log("[Onboarding] ✅ AI 生成完成，等待数据可用...")
           setGenerationProgress(60)
 
-          // Phase 3: 保存数据
+          // Phase 3: 验证数据
           setGenerationPhase("saving")
-          setGenerationProgress(80)
-          console.log("[Onboarding] 保存数据中...")
+          setGenerationProgress(70)
+          setCurrentAction("验证数据完整性...")
 
-          // 模拟保存完成
-          await new Promise(resolve => setTimeout(resolve, 800))
+          // 等待数据真正写入数据库并可查询
+          let retries = 0
+          const maxRetries = 10
+          let dataReady = false
+
+          while (retries < maxRetries && !dataReady) {
+            await new Promise(resolve => setTimeout(resolve, 500))
+
+            // 检查数据是否可用
+            const checkResponse = await fetch(`/api/check-calendar-data?userId=${user.id}`)
+            const checkResult = await checkResponse.json()
+
+            if (checkResult.hasData && checkResult.count >= 30) {
+              dataReady = true
+              console.log("[Onboarding] ✅ 数据已就绪，共", checkResult.count, "条")
+            } else {
+              retries++
+              console.log(`[Onboarding] 等待数据就绪... (${retries}/${maxRetries})`)
+            }
+          }
+
+          if (!dataReady) {
+            console.warn("[Onboarding] ⚠️ 数据验证超时，继续跳转")
+          }
 
           setGenerationProgress(100)
 
@@ -164,8 +186,8 @@ export default function OnboardingPage() {
 
           toast.success(`成功生成 ${result.actionsCount} 个搞钱行动！`)
 
-          // 等待 2 秒显示完成状态
-          await new Promise(resolve => setTimeout(resolve, 2000))
+          // 等待 1.5 秒显示完成状态
+          await new Promise(resolve => setTimeout(resolve, 1500))
         } else {
           console.error("[Onboarding] ⚠️ AI 日历生成失败:", result.error)
           toast.error(result.error || "日历生成失败，请重试")
@@ -421,9 +443,9 @@ export default function OnboardingPage() {
               </div>
 
               {/* 左右布局：左边目标输入，右边生成按钮 */}
-              <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-6 items-start">
                 {/* 左侧：目标输入区域 */}
-                <Card className="p-6">
+                <Card className="p-6 flex-1 max-w-2xl w-full">
                   <label htmlFor="goal" className="text-base font-medium mb-2 block">
                     你的搞钱目标是什么？
                   </label>
@@ -460,13 +482,13 @@ export default function OnboardingPage() {
                     <motion.div
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="mt-6 p-4 bg-accent/10 rounded-lg border border-accent/20"
+                      className="mt-6 p-4 bg-accent/10 rounded-lg border border-accent/20 max-h-[400px] overflow-y-auto"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <Sparkles className="h-5 w-5 text-accent" />
+                        <Sparkles className="h-5 w-5 text-accent flex-shrink-0" />
                         <h3 className="font-semibold text-lg">AI 为你推荐的行动</h3>
                       </div>
-                      <div className="text-sm text-muted-foreground whitespace-pre-wrap">{aiSuggestions}</div>
+                      <div className="text-sm text-muted-foreground leading-relaxed">{aiSuggestions}</div>
                       <p className="text-xs text-muted-foreground mt-3 italic">
                         💡 这些建议会融入你的 365 天行动日历中
                       </p>
@@ -479,7 +501,7 @@ export default function OnboardingPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex flex-col justify-center"
+                    className="lg:sticky lg:top-6 w-full lg:w-[400px] flex-shrink-0"
                   >
                     <Card className="p-8 bg-gradient-to-br from-orange-500/10 to-pink-500/10 border-accent/20">
                       <div className="text-center mb-6">
