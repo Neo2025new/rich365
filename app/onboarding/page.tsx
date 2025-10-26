@@ -124,12 +124,39 @@ export default function OnboardingPage() {
       if (user) {
         console.log("[Onboarding] 用户已登录，开始生成 AI 日历")
 
-        // Phase 2: AI 生成中
+        // Phase 2.1: 生成年度规划（12 个月主题）
         setGenerationPhase("generating")
-        setGenerationProgress(30)
+        setGenerationProgress(25)
+        setCurrentAction("正在为你规划全年的搞钱主题...")
+
+        console.log("[Onboarding] 步骤 1: 生成年度规划...")
+        const yearlyPlanResponse = await fetch("/api/generate-yearly-plan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: user.id,
+            profile: profileData,
+          }),
+        })
+
+        const yearlyPlanResult = await yearlyPlanResponse.json()
+
+        if (!yearlyPlanResult.success) {
+          console.error("[Onboarding] ❌ 年度规划生成失败:", yearlyPlanResult.error)
+          toast.error(yearlyPlanResult.error || "年度规划生成失败")
+          setIsGeneratingCalendar(false)
+          return
+        }
+
+        console.log("[Onboarding] ✅ 年度规划生成完成")
+        setGenerationProgress(40)
+
+        // Phase 2.2: 生成第一个月详细行动
         setCurrentAction("正在为你定制第一个月的搞钱行动...")
 
-        console.log("[Onboarding] 调用 Progressive API 生成第一个月...")
+        console.log("[Onboarding] 步骤 2: 生成第一个月详细行动...")
         const response = await fetch("/api/generate-calendar-progressive", {
           method: "POST",
           headers: {
@@ -145,8 +172,8 @@ export default function OnboardingPage() {
         const result = await response.json()
 
         if (result.success) {
-          console.log("[Onboarding] ✅ AI 生成完成，等待数据可用...")
-          setGenerationProgress(60)
+          console.log("[Onboarding] ✅ 第一个月行动生成完成，等待数据可用...")
+          setGenerationProgress(65)
 
           // Phase 3: 验证数据
           setGenerationPhase("saving")

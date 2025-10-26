@@ -6,7 +6,7 @@ import Link from "next/link"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { mbtiData, roleData } from "@/lib/calendar-data"
-import { getRelativeMonthTheme } from "@/lib/calendar-hybrid"
+import { getAllMonthlyThemes, getRelativeMonthTheme } from "@/lib/calendar-hybrid"
 import { ArrowRight, User, Trophy, Sparkles, Printer } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 
@@ -134,12 +134,36 @@ export default function CalendarPage() {
         setTimeout(() => reject(new Error("加载超时，请刷新页面重试")), 10000)
       })
 
-      // 只加载第一个月（从今天开始的 30 天）
+      // 加载所有 12 个月的主题
       const loadPromise = (async () => {
-        console.log(`[Calendar Page] 加载第一个月主题...`)
-        const theme = await getRelativeMonthTheme(user?.id || null, 1, profile)
-        themes[1] = theme
-        console.log(`[Calendar Page] 第一个月主题加载完成:`, theme)
+        console.log(`[Calendar Page] 加载所有月度主题...`)
+        const allThemes = await getAllMonthlyThemes(user?.id || null)
+
+        // 如果有数据库中的主题，使用它们
+        if (allThemes && allThemes.length > 0) {
+          console.log(`[Calendar Page] 从数据库加载到 ${allThemes.length} 个月主题`)
+          allThemes.forEach((theme) => {
+            themes[theme.relative_month] = {
+              month: theme.relative_month,
+              name: `第${theme.relative_month}个月`,
+              theme: theme.theme,
+              description: theme.description,
+              emoji: theme.emoji,
+              dateRange: {
+                start: theme.start_date,
+                end: theme.end_date,
+              },
+              isGenerated: theme.is_generated,
+            }
+          })
+        } else {
+          // 如果没有数据，只加载第一个月
+          console.log(`[Calendar Page] 数据库无数据，只加载第一个月`)
+          const theme = await getRelativeMonthTheme(user?.id || null, 1, profile)
+          themes[1] = theme
+        }
+
+        console.log(`[Calendar Page] 月度主题加载完成`)
         return themes
       })()
 
@@ -204,8 +228,18 @@ export default function CalendarPage() {
     return null
   }
 
-  const relativeMonths = [1] // 只显示第一个月（从今天开始的 30 天）
+  // 获取所有已加载的月份（1-12）
+  const relativeMonths = Object.keys(monthThemes)
+    .map(Number)
+    .sort((a, b) => a - b)
   const firstMonthTheme = monthThemes[1]
+
+  const handleMonthClick = (relativeMonth: number, isGenerated: boolean) => {
+    if (!isGenerated) {
+      // TODO: 触发生成该月份的详细行动
+      alert(`第${relativeMonth}个月暂未解锁，点击后将为你生成该月的详细行动计划`)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -224,7 +258,7 @@ export default function CalendarPage() {
             <p className="text-xl md:text-2xl text-muted-foreground mb-2">每天行动一小步，财富增长一大步</p>
             {firstMonthTheme?.dateRange && (
               <p className="text-lg text-muted-foreground mb-4">
-                📅 {firstMonthTheme.dateRange.start} 至 {firstMonthTheme.dateRange.end}
+                📅 当前行动周期：{firstMonthTheme.dateRange.start} 至 {firstMonthTheme.dateRange.end}
               </p>
             )}
             <div className="flex flex-wrap gap-3 mt-4">
@@ -251,35 +285,80 @@ export default function CalendarPage() {
       {/* Monthly Themes Grid */}
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="mb-8">
-          <h2 className="text-2xl md:text-3xl font-bold mb-2">开始你的搞钱行动</h2>
-          <p className="text-muted-foreground">从今天开始的 30 天专属行动计划</p>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">全年搞钱规划</h2>
+          <p className="text-muted-foreground">12 个月循序渐进的成长路径，点击解锁更多行动</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {relativeMonths.map((relativeMonth) => {
             const theme = monthThemes[relativeMonth]
+            const isGenerated = theme?.isGenerated ?? false
+            const isCurrentMonth = relativeMonth === 1
 
-            return (
-              <Link key={relativeMonth} href={`/month/${relativeMonth}`}>
-                <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer group border-2 border-accent ring-2 ring-accent/20 relative">
-                  <div className="absolute -top-3 left-4 px-3 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full">
-                    当前行动 🔥
-                  </div>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="text-4xl">{theme?.emoji || "📅"}</div>
-                    <div className="text-sm font-medium text-muted-foreground">{theme?.name || "第一个月"}</div>
-                  </div>
-                  <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
-                    {theme?.theme || "加载中..."}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">{theme?.description || ""}</p>
-                  <div className="flex items-center text-sm font-medium text-accent">
-                    开始行动
-                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Card>
-              </Link>
-            )
+            if (isGenerated) {
+              // 已生成的月份：可点击链接
+              return (
+                <Link key={relativeMonth} href={`/month/${relativeMonth}`}>
+                  <Card className={`p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer group relative ${
+                    isCurrentMonth
+                      ? "border-2 border-accent ring-2 ring-accent/20"
+                      : "border hover:border-accent/50"
+                  }`}>
+                    {isCurrentMonth && (
+                      <div className="absolute -top-3 left-4 px-3 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full">
+                        当前行动 🔥
+                      </div>
+                    )}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="text-4xl">{theme?.emoji || "📅"}</div>
+                      <div className="text-sm font-medium text-muted-foreground">{theme?.name || `第${relativeMonth}个月`}</div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 group-hover:text-accent transition-colors">
+                      {theme?.theme || "加载中..."}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {theme?.dateRange
+                        ? `${theme.dateRange.start.slice(5)} ~ ${theme.dateRange.end.slice(5)}`
+                        : theme?.description || ""}
+                    </p>
+                    <div className="flex items-center text-sm font-medium text-accent">
+                      查看行动
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Card>
+                </Link>
+              )
+            } else {
+              // 未生成的月份：待解锁状态
+              return (
+                <div
+                  key={relativeMonth}
+                  onClick={() => handleMonthClick(relativeMonth, false)}
+                >
+                  <Card className="p-6 cursor-pointer group relative border-2 border-dashed border-muted-foreground/30 hover:border-accent/50 transition-all duration-300 bg-muted/20">
+                    <div className="absolute -top-3 right-4 px-3 py-1 bg-muted text-muted-foreground text-xs font-bold rounded-full border">
+                      待解锁 🔒
+                    </div>
+                    <div className="flex items-start justify-between mb-4 opacity-70">
+                      <div className="text-4xl">{theme?.emoji || "📅"}</div>
+                      <div className="text-sm font-medium text-muted-foreground">{theme?.name || `第${relativeMonth}个月`}</div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2 opacity-70">
+                      {theme?.theme || "未解锁"}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4 opacity-70">
+                      {theme?.dateRange
+                        ? `${theme.dateRange.start.slice(5)} ~ ${theme.dateRange.end.slice(5)}`
+                        : theme?.description || "完成当前月份后解锁"}
+                    </p>
+                    <div className="flex items-center text-sm font-medium text-muted-foreground">
+                      点击解锁
+                      <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Card>
+                </div>
+              )
+            }
           })}
         </div>
       </div>

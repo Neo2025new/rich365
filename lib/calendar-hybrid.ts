@@ -13,13 +13,44 @@ import {
 } from "@/lib/calendar-data"
 
 /**
+ * 获取用户的所有月度主题（从 monthly_themes 表）
+ */
+export async function getAllMonthlyThemes(userId: string | null) {
+  if (!userId) {
+    return []
+  }
+
+  try {
+    const supabase = await import("@/lib/supabase/client").then(m => m.createClient())
+    const year = new Date().getFullYear()
+
+    const { data, error } = await supabase
+      .from("monthly_themes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("year", year)
+      .order("relative_month", { ascending: true })
+
+    if (error) {
+      console.error("[Calendar Hybrid] 查询月度主题失败:", error)
+      return []
+    }
+
+    return data || []
+  } catch (error) {
+    console.error("[Calendar Hybrid] 获取月度主题失败:", error)
+    return []
+  }
+}
+
+/**
  * 获取相对月份的主题和日期范围
  */
 export async function getRelativeMonthTheme(
   userId: string | null,
   relativeMonth: number,
   profile: UserProfile
-): Promise<MonthTheme & { dateRange: { start: string; end: string } }> {
+): Promise<MonthTheme & { dateRange: { start: string; end: string }; isGenerated?: boolean }> {
   const { startDate, endDate } = getRelativeMonthDateRange(relativeMonth)
 
   // 如果没有登录，使用模板
@@ -31,15 +62,42 @@ export async function getRelativeMonthTheme(
       description: "从今天开始，每天一个小行动，积累财富大能量",
       emoji: "💰",
       dateRange: { start: startDate, end: endDate },
+      isGenerated: false,
     }
   }
 
   try {
-    // 获取该日期范围的行动
+    // 优先从 monthly_themes 表获取
+    const supabase = await import("@/lib/supabase/client").then(m => m.createClient())
+    const year = new Date().getFullYear()
+
+    const { data: monthlyTheme } = await supabase
+      .from("monthly_themes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("year", year)
+      .eq("relative_month", relativeMonth)
+      .single()
+
+    if (monthlyTheme) {
+      return {
+        month: relativeMonth,
+        name: `第${relativeMonth}个月`,
+        theme: monthlyTheme.theme,
+        description: formatDateRangeDescription(monthlyTheme.start_date, monthlyTheme.end_date),
+        emoji: monthlyTheme.emoji || "💰",
+        dateRange: {
+          start: monthlyTheme.start_date,
+          end: monthlyTheme.end_date,
+        },
+        isGenerated: monthlyTheme.is_generated,
+      }
+    }
+
+    // Fallback: 从行动数据中推断
     const actions = await getUserCalendarActionsByDateRange(userId, startDate, endDate)
 
     if (actions.length > 0) {
-      // 使用数据库中的主题
       return {
         month: relativeMonth,
         name: `第${relativeMonth}个月`,
@@ -47,6 +105,7 @@ export async function getRelativeMonthTheme(
         description: formatDateRangeDescription(startDate, endDate),
         emoji: actions[0].emoji || "💰",
         dateRange: { start: startDate, end: endDate },
+        isGenerated: true,
       }
     }
 
@@ -58,6 +117,7 @@ export async function getRelativeMonthTheme(
       description: formatDateRangeDescription(startDate, endDate),
       emoji: "📅",
       dateRange: { start: startDate, end: endDate },
+      isGenerated: false,
     }
   } catch (error) {
     console.error("[Calendar Hybrid] 获取相对月份主题失败:", error)
@@ -68,6 +128,7 @@ export async function getRelativeMonthTheme(
       description: formatDateRangeDescription(startDate, endDate),
       emoji: "❌",
       dateRange: { start: startDate, end: endDate },
+      isGenerated: false,
     }
   }
 }
