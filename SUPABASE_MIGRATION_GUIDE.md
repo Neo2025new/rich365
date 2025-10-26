@@ -93,7 +93,7 @@ DECLARE
   user_current_streak INTEGER;
   user_longest_streak INTEGER;
   last_check_in_date DATE;
-  current_date DATE;
+  check_date DATE;
 BEGIN
   -- 获取用户总打卡次数
   SELECT COUNT(*) INTO user_total
@@ -101,18 +101,18 @@ BEGIN
   WHERE user_id = NEW.user_id;
 
   -- 计算当前连续打卡天数
-  current_date := NEW.date;
+  check_date := NEW.date;
   user_current_streak := 1;
 
   LOOP
-    last_check_in_date := current_date - INTERVAL '1 day';
+    last_check_in_date := check_date - INTERVAL '1 day';
 
     IF EXISTS (
       SELECT 1 FROM check_ins
       WHERE user_id = NEW.user_id AND date = last_check_in_date
     ) THEN
       user_current_streak := user_current_streak + 1;
-      current_date := last_check_in_date;
+      check_date := last_check_in_date;
     ELSE
       EXIT;
     END IF;
