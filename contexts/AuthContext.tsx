@@ -59,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (error) {
         if (error.code === "PGRST116") {
-          // 新用户，profile 还未创建（触发器会自动创建）
-          console.log("[AuthContext] 新用户，等待 profile 创建")
-          setProfile(null)
+          // 新用户，创建默认 profile 并生成第一个月数据
+          console.log("[AuthContext] 新用户，初始化默认数据")
+          await initializeNewUser(userId)
+          return
         } else {
           console.error("[AuthContext] 加载 profile 失败:", error)
           setProfile(null)
@@ -76,12 +77,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           avatar: data.avatar || undefined,
         }
         setProfile(userProfile)
+
+        // 检查是否需要生成第一个月数据
+        await ensureFirstMonthData(userId, userProfile)
       }
     } catch (error) {
       console.error("[AuthContext] 加载 profile 异常:", error)
       setProfile(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const initializeNewUser = async (userId: string) => {
+    try {
+      console.log("[AuthContext] 🚀 开始初始化新用户")
+
+      // 创建默认 profile
+      const defaultProfile = {
+        mbti: "INFP",
+        role: "创业者",
+        goal: "实现财富自由"
+      }
+
+      const { error: insertError } = await supabase
+        .from("user_profiles")
+        .insert({
+          user_id: userId,
+          ...defaultProfile
+        })
+
+      if (insertError) {
+        console.error("[AuthContext] ❌ 创建默认 profile 失败:", insertError)
+        setLoading(false)
+        return
+      }
+
+      console.log("[AuthContext] ✅ 默认 profile 创建成功")
+
+      // 生成第一个月数据
+      await generateFirstMonth(userId, defaultProfile)
+
+      // 重新加载 profile
+      await loadProfile(userId)
+    } catch (error) {
+      console.error("[AuthContext] ❌ 初始化新用户失败:", error)
+      setLoading(false)
+    }
+  }
+
+  const ensureFirstMonthData = async (userId: string, profile: UserProfile) => {
+    try {
+      // 检查是否有 daily_actions
+      const { data, error } = await supabase
+        .from("daily_actions")
+        .select("id")
+        .limit(1)
+
+      if (!data || data.length === 0) {
+        // 没有数据，生成第一个月
+        console.log("[AuthContext] 📅 检测到没有数据，生成第一个月")
+        await generateFirstMonth(userId, profile)
+      }
+    } catch (error) {
+      console.error("[AuthContext] 检查 daily_actions 失败:", error)
+    }
+  }
+
+  const generateFirstMonth = async (userId: string, profile: UserProfile) => {
+    try {
+      console.log("[AuthContext] 🤖 调用 AI 生成第一个月...")
+
+      const response = await fetch("/api/generate-calendar-progressive", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          profile,
+          phase: "initial"
+        })
+      })
+
+      const result = await response.json()
+      if (result.success) {
+        console.log("[AuthContext] ✅ 第一个月数据生成成功，共", result.actionsCount, "个行动")
+      } else {
+        console.error("[AuthContext] ❌ 生成第一个月失败:", result.error)
+      }
+    } catch (error) {
+      console.error("[AuthContext] ❌ 调用 API 失败:", error)
     }
   }
 
