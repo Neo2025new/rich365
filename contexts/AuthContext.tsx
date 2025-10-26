@@ -51,10 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
+      // RLS 策略会自动根据 auth.uid() 过滤，不需要手动指定 user_id
       const { data, error } = await supabase
         .from("user_profiles")
         .select("*")
-        .eq("user_id", userId)
         .single()
 
       if (error) {
@@ -109,10 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newProfile.username !== undefined) updateData.username = newProfile.username
       if (newProfile.avatar !== undefined) updateData.avatar = newProfile.avatar
 
+      // RLS 策略会自动根据 auth.uid() 过滤，不需要手动指定 user_id
       const { error } = await supabase
         .from("user_profiles")
         .update(updateData)
-        .eq("user_id", user.id)
 
       if (error) {
         console.error("[AuthContext] 更新 profile 失败:", error)
