@@ -61,23 +61,10 @@ async function cleanupDatabase() {
       console.log(`✅ 已删除 ${actionsCount || 0} 条每日行动`)
     }
 
-    // 3. 删除所有月度主题
-    console.log('🗑️  删除月度主题...')
-    const { error: themesError, count: themesCount } = await supabase
-      .from('monthly_themes')
-      .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000')
-
-    if (themesError) {
-      console.error('❌ 删除月度主题失败:', themesError)
-    } else {
-      console.log(`✅ 已删除 ${themesCount || 0} 条月度主题`)
-    }
-
-    // 4. 删除所有用户配置
+    // 3. 删除所有用户配置
     console.log('🗑️  删除用户配置...')
     const { error: profilesError, count: profilesCount } = await supabase
-      .from('user_profiles')
+      .from('profiles')
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000')
 
@@ -87,19 +74,17 @@ async function cleanupDatabase() {
       console.log(`✅ 已删除 ${profilesCount || 0} 条用户配置`)
     }
 
-    // 5. 验证清理结果
+    // 4. 验证清理结果
     console.log('\n📊 验证清理结果...')
-    const [checkIns, actions, themes, profiles] = await Promise.all([
+    const [checkIns, actions, profiles] = await Promise.all([
       supabase.from('check_ins').select('*', { count: 'exact', head: true }),
       supabase.from('daily_actions').select('*', { count: 'exact', head: true }),
-      supabase.from('monthly_themes').select('*', { count: 'exact', head: true }),
-      supabase.from('user_profiles').select('*', { count: 'exact', head: true })
+      supabase.from('profiles').select('*', { count: 'exact', head: true })
     ])
 
     console.log(`✅ check_ins 表: ${checkIns.count || 0} 条记录`)
     console.log(`✅ daily_actions 表: ${actions.count || 0} 条记录`)
-    console.log(`✅ monthly_themes 表: ${themes.count || 0} 条记录`)
-    console.log(`✅ user_profiles 表: ${profiles.count || 0} 条记录`)
+    console.log(`✅ profiles 表: ${profiles.count || 0} 条记录`)
 
     console.log('\n✨ 数据库清理完成！')
     console.log('\n⚠️  注意：')

@@ -23,7 +23,7 @@ export async function getStreakLeaderboard(currentUserId?: string, limit = 10): 
 
   try {
     const { data, error } = await supabase
-      .from("user_profiles")
+      .from("profiles")
       .select("id, username, avatar, current_streak, total_check_ins, total_coins")
       .order("current_streak", { ascending: false })
       .order("total_check_ins", { ascending: false })
@@ -57,7 +57,7 @@ export async function getTotalCheckInsLeaderboard(currentUserId?: string, limit 
 
   try {
     const { data, error } = await supabase
-      .from("user_profiles")
+      .from("profiles")
       .select("id, username, avatar, current_streak, total_check_ins, total_coins")
       .order("total_check_ins", { ascending: false })
       .order("current_streak", { ascending: false })
@@ -100,7 +100,7 @@ export async function getUserRank(
 
     // 获取用户统计
     const { data: userData, error: userError } = await supabase
-      .from("user_profiles")
+      .from("profiles")
       .select(`${orderColumn}`)
       .eq("id", userId)
       .single()
@@ -113,7 +113,7 @@ export async function getUserRank(
 
     // 计算排名（比用户强的人数 + 1）
     const { count, error: countError } = await supabase
-      .from("user_profiles")
+      .from("profiles")
       .select("id", { count: "exact", head: true })
       .gt(orderColumn, userValue)
 
@@ -125,7 +125,7 @@ export async function getUserRank(
 
     // 获取总用户数
     const { count: totalCount } = await supabase
-      .from("user_profiles")
+      .from("profiles")
       .select("id", { count: "exact", head: true })
 
     return {
@@ -149,8 +149,7 @@ export async function updateUserDisplayInfo(
   const supabase = createClient()
 
   try {
-    // UPDATE 需要 WHERE 条件来定位记录
-    const { error } = await supabase.from("user_profiles").update({ username, avatar }).eq("user_id", userId)
+    const { error } = await supabase.from("profiles").update({ username, avatar }).eq("id", userId)
 
     if (error) {
       console.error("[Leaderboard] 更新用户显示信息失败:", error)

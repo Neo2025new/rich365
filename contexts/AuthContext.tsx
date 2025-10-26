@@ -51,16 +51,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      // RLS 策略会自动根据 auth.uid() 过滤，不需要手动指定 user_id
       const { data, error } = await supabase
-        .from("user_profiles")
+        .from("profiles")
         .select("*")
+        .eq("id", userId)
         .single()
 
       if (error) {
         if (error.code === "PGRST116") {
-          // 新用户，profile 还未创建（等待 onboarding 完成）
-          console.log("[AuthContext] 新用户，等待 onboarding")
+          // 新用户，profile 还未创建（触发器会自动创建）
+          console.log("[AuthContext] 新用户，等待 profile 创建")
           setProfile(null)
         } else {
           console.error("[AuthContext] 加载 profile 失败:", error)
@@ -109,12 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (newProfile.username !== undefined) updateData.username = newProfile.username
       if (newProfile.avatar !== undefined) updateData.avatar = newProfile.avatar
 
-      // UPDATE 需要 WHERE 条件来定位记录
-      // RLS 确保只能更新自己的数据
       const { error } = await supabase
-        .from("user_profiles")
+        .from("profiles")
         .update(updateData)
-        .eq("user_id", user.id)
+        .eq("id", user.id)
 
       if (error) {
         console.error("[AuthContext] 更新 profile 失败:", error)
