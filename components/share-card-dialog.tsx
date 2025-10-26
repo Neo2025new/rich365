@@ -115,7 +115,10 @@ export function ShareCardDialog({ date, emoji, title, theme }: ShareCardDialogPr
             <div className="space-y-3">
               {/* Stats Badge */}
               {currentStreak > 0 && (
-                <div className="flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-pink-500 to-orange-500 text-white rounded-full text-sm font-bold">
+                <div
+                  className="flex items-center justify-center gap-2 px-4 py-2 text-white rounded-full text-sm font-bold"
+                  style={{ background: "linear-gradient(90deg, #ec4899 0%, #f97316 100%)" }}
+                >
                   <span>已打卡第 {currentStreak} 天</span>
                   <span>🔥</span>
                 </div>

@@ -139,13 +139,15 @@ ${profile.goal ? `- 个人目标：${profile.goal}` : ""}
           temperature: 0.9,
           topP: 0.95,
           topK: 40,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json", // 强制返回 JSON
         }
       })
       const result = await model.generateContent(prompt)
       const text = result.response.text()
 
       console.log("[Progressive Calendar] AI 响应长度:", text.length)
+      console.log("[Progressive Calendar] AI 响应前 500 字符:", text.substring(0, 500))
 
       // 解析 JSON
       const actions = parseAIResponse(text)
