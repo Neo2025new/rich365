@@ -254,10 +254,19 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {months.map((month) => {
             const theme = monthThemes[month]
+            const currentMonth = new Date().getMonth() + 1
+            const isCurrentMonth = month === currentMonth
 
             return (
               <Link key={month} href={`/month/${month}`}>
-                <Card className="p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer group border-2 hover:border-accent relative">
+                <Card className={`p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.02] cursor-pointer group border-2 hover:border-accent relative ${
+                  isCurrentMonth ? 'border-accent ring-2 ring-accent/20' : ''
+                }`}>
+                  {isCurrentMonth && (
+                    <div className="absolute -top-3 left-4 px-3 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full">
+                      本月 🔥
+                    </div>
+                  )}
                   <div className="flex items-start justify-between mb-4">
                     <div className="text-4xl">{theme?.emoji || "📅"}</div>
                     <div className="text-sm font-medium text-muted-foreground">{theme?.name || `${month}月`}</div>
@@ -267,7 +276,7 @@ export default function CalendarPage() {
                   </h3>
                   <p className="text-sm text-muted-foreground mb-4">{theme?.description || ""}</p>
                   <div className="flex items-center text-sm font-medium text-accent">
-                    查看日历
+                    {isCurrentMonth ? '开始本月行动' : '查看日历'}
                     <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                   </div>
                 </Card>
